@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+"""Maps stderr to a failure category."""
+import sys
+
+stderr_file = sys.argv[1] if len(sys.argv) > 1 else "/dev/null"
+
+with open(stderr_file) as f:
+    content = f.read().lower()
+
+if "memoryerror" in content or "killed" in content:
+    print("oom")
+elif "modulenotfounderror" in content or "no module named" in content:
+    print("dependency_error")
+elif "filenotfounderror" in content or "no such file" in content:
+    print("pipeline_broken")
+elif "nan" in content:
+    print("numerical_instability")
+elif "assert" in content:
+    print("tolerance_miss")
+else:
+    print("unknown")
