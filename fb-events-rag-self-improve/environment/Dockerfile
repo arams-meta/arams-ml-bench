@@ -1,4 +1,5 @@
 # Self-improving RAG for FB Events inventory - ML Bench
+# Compatible with both local `docker build -f environment/Dockerfile environment/` and codimango harbor (build context = environment/)
 FROM python:3.10-slim
 
 # System deps
@@ -23,8 +24,9 @@ WORKDIR /app
 RUN mkdir -p /app/data /app/references /output /tests /solution /logs/verifier
 
 # Copy generator references (deterministic, no 3P tokens in data)
-COPY environment/references/ /app/references/
-COPY environment/references/ /references/
+# Harbor build context is environment/ dir, so source is references/
+COPY references/ /app/references/
+COPY references/ /references/
 
 # Generate synthetic inventory at build time (deterministic seed=42)
 # 20k events, 500 queries + 100 holdout for eval - CPU friendly ~ few MB
@@ -41,9 +43,10 @@ RUN python3 /references/generate_queries.py \
 # Pre-download embedding model to avoid runtime download (offline eval)
 RUN python3 -c "from sentence_transformers import SentenceTransformer; m=SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2'); m.save('/app/data/minilm')"
 
-# Copy tests and solution placeholders (evaluator mounts them at /tests, /solution)
-COPY tests/ /tests/
-COPY solution/ /solution/
+# NOTE: Do NOT COPY tests/ or solution/ here - harbor mounts them at runtime for oracle,
+# and copying them causes checksum errors when build context is environment/ dir.
+# For local manual builds that need them, they will be mounted via -v or present via COPY if building from task root.
+# The placeholders are created via mkdir above.
 
 ENV PYTHONHASHSEED=42
 ENV TRANSFORMERS_OFFLINE=1

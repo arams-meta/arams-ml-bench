@@ -8,7 +8,7 @@ mkdir -p /output
 # 3. Encode filtered subset, compute cosine vs query (or query+facet expanded), rank by score + popularity*0.2
 # 4. Query rewrite for low-recall
 
-cat > /tmp/oracle.py << 'PY'
+cat > /app/oracle_impl.py << 'PY'
 import json
 import os
 import math
@@ -331,6 +331,6 @@ with open("/output/eval_report.json", "w") as f:
 print("Done - wrote /output/*")
 PY
 
-python3 /tmp/oracle.py
+python3 /app/oracle_impl.py
 chmod +x /output/* 2>/dev/null || true
 ls -lh /output/
