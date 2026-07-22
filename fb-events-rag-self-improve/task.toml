@@ -1,0 +1,27 @@
+version = "1.0"
+
+[task]
+name = "arams/fb-events-rag-self-improve"
+description = "Self-improving RAG with auto-eval loop for Facebook Events inventory"
+authors = [{ name = "Aram", email = "arams@meta.com" }]
+keywords = ["llm", "rag", "retrieval", "self-improvement", "evaluation", "events"]
+format = "ml_bench_single_turn"
+workstream = "llm_research"
+
+[metadata]
+author_name = "Aram"
+author_email = "arams@meta.com"
+difficulty = "medium"
+languages = ["python"]
+category_usecase = "language-model-evaluation"
+category_subdomain = "retrieval-augmented-generation"
+reward_type = "binary"
+seed = 42
+deterministic = true
+timeout = 1800
+memory_limit = "8GB"
+tags = ["llm", "rag", "self-improvement", "cpu-native"]
+
+[environment]
+python_version = "3.10"
+requirements = ["sentence-transformers", "faiss-cpu", "numpy", "scikit-learn", "pandas"]

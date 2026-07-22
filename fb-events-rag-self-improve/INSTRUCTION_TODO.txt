@@ -1,0 +1,15 @@
+You (human) must author instruction.md - Claude cannot draft it per Tier 12 HARD RULE.
+
+Per mlbench-hackathon-guide, instruction.md must be human-written, informal/natural tone, and be specific:
+- Exact input paths: /app/data/events.jsonl, /app/data/queries.jsonl, /app/data/relevance.jsonl, /app/data/holdout_*
+- Exact output paths: /output/rag_config.json, /output/eval_report.json, /output/retrieved.jsonl, /output/holdout_retrieved.jsonl
+- Constraints: no external API, offline model from /app/data/minilm, CPU only, deterministic seed 42
+- Task: build base RAG, implement auto-eval (recall@10), self-improve loop (filter/dedup/rerank/query-rewrite), show lift
+- What counts as success: recall@10 >=0.60 and lift +0.08 over baseline, time/geo/spam/dedup constraints, holdout ratio >=0.8
+
+Do NOT paste this file into Claude for rewrite. Write instruction.md yourself in your own words.
+
+After you write it, run:
+  docker build -f environment/Dockerfile -t fb-events-rag .
+  docker run --rm -v $(pwd)/solution:/solution -v $(pwd)/tests:/tests fb-events-rag /solution/solve.sh
+  docker run --rm -v $(pwd)/tests:/tests -v /tmp/logs:/logs/verifier fb-events-rag /tests/test.sh
