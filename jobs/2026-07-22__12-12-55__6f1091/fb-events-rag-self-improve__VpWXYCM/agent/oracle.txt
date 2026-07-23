@@ -1,0 +1,8 @@
+/usr/local/lib/python3.10/site-packages/transformers/utils/generic.py:441: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/usr/local/lib/python3.10/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+Loading data...
+Valid events: 17447/20000
+Encoding events with topic...
+Batches:   0%|          | 0/546 [00:00<?, ?it/s]Batches:   0%|          | 1/546 [00:21<3:13:08, 21.26s/it]Batches:   0%|          | 2/546 [00:40<3:02:18, 20.11s/it]Batches:   1%|          | 3/546 [00:55<2:42:06, 17.91s/it]Batches:   1%|          | 4/546 [01:11<2:32:51, 16.92s/it]Batches:   1%|          | 5/546 [01:27<2:30:52, 16.73s/it]Batches:   1%|          | 6/546 [01:47<2:40:53, 17.88s/it]Batches:   1%|▏         | 7/546 [02:04<2:37:43, 17.56s/it]

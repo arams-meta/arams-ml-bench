@@ -1,14 +1,11 @@
 # Self-improving RAG for FB Events inventory - ML Bench
-# Compatible with both local `docker build -f environment/Dockerfile environment/` and codimango harbor (build context = environment/)
+# Harbor build context is environment/ dir. Do NOT copy references to /app (info leakage).
 FROM python:3.10-slim
 
-# System deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git build-essential curl && rm -rf /var/lib/apt/lists/*
 
-# Python deps - baked at build time for determinism
-# huggingface_hub pinned: sentence-transformers==2.2.2 imports cached_download,
-# which was removed in newer huggingface_hub releases. 0.16.4 keeps it available.
+# huggingface_hub pinned: sentence-transformers==2.2.2 needs 0.16.4
 RUN pip install --no-cache-dir \
     sentence-transformers==2.2.2 \
     huggingface_hub==0.16.4 \
@@ -19,38 +16,33 @@ RUN pip install --no-cache-dir \
     pytest==7.4.0 \
     pytest-json-report==1.5.0
 
-# Work dirs
 WORKDIR /app
-RUN mkdir -p /app/data /app/references /output /tests /solution /logs/verifier
+RUN mkdir -p /app/data /output /logs/verifier /opt/eval
 
-# Copy generator references (deterministic, no 3P tokens in data)
-# Harbor build context is environment/ dir, so source is references/
-COPY references/ /app/references/
-COPY references/ /references/
+# Copy generators to tmp (build-time only, not agent-visible in /app)
+COPY references/ /tmp/build_refs/
 
-# Generate synthetic inventory at build time (deterministic seed=42)
-# 20k events, 500 queries + 100 holdout for eval - CPU friendly ~ few MB
-RUN python3 /references/generate_events.py --n 20000 --seed 42 --out /app/data/events.jsonl
-RUN python3 /references/generate_queries.py \
-    --events /app/data/events.jsonl \
-    --n 500 --seed 42 \
-    --out-queries /app/data/queries.jsonl \
-    --out-rel /app/data/relevance.jsonl \
-    --out-holdout-queries /app/data/holdout_queries.jsonl \
-    --out-holdout-rel /app/data/holdout_relevance.jsonl \
-    --holdout-n 100
+# Generate inventory at build time, seed=42
+# Only events + queries go to /app/data (agent-visible). Relevance goes to /opt/eval (hidden from agent, visible to tests/oracle via mount, but not in /app)
+RUN python3 /tmp/build_refs/generate_events.py --n 20000 --seed 42 --out /app/data/events.jsonl && \
+    python3 /tmp/build_refs/generate_queries.py \
+      --events /app/data/events.jsonl \
+      --n 500 --seed 42 \
+      --out-queries /app/data/queries.jsonl \
+      --out-rel /opt/eval/relevance.jsonl \
+      --out-holdout-queries /app/data/holdout_queries.jsonl \
+      --out-holdout-rel /opt/eval/holdout_relevance.jsonl \
+      --holdout-n 100 && \
+    echo "Generated $(wc -l < /app/data/events.jsonl) events" && \
+    rm -rf /tmp/build_refs
 
-# Pre-download embedding model to avoid runtime download (offline eval)
+# Pre-download MiniLM to avoid runtime download
 RUN python3 -c "from sentence_transformers import SentenceTransformer; m=SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2'); m.save('/app/data/minilm')"
 
-# NOTE: Do NOT COPY tests/ or solution/ here - harbor mounts them at runtime for oracle,
-# and copying them causes checksum errors when build context is environment/ dir.
-# For local manual builds that need them, they will be mounted via -v or present via COPY if building from task root.
-# The placeholders are created via mkdir above.
+# Do NOT copy tests/ or solution/ or references/ to /app - harbor mounts them, and copying causes checksum errors + info leakage
 
 ENV PYTHONHASHSEED=42
 ENV TRANSFORMERS_OFFLINE=1
 ENV HF_HUB_OFFLINE=1
 
-# Default cmd for debugging
 CMD ["bash"]
