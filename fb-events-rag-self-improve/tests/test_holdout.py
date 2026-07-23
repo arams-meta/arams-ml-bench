@@ -1,5 +1,7 @@
 """
 Holdout generalization: re-evaluate on hidden holdout queries (future time windows).
+Fix: recompute recall independently from retrieved files vs hidden ground truth, don't trust eval_report floats.
+Ground truth loaded from /opt/eval first (hidden, not agent-writable).
 """
 
 import json
@@ -74,102 +76,150 @@ def compute_relevance_for_query(q, valid_events, ev_map, by_city):
     return dedup_by_cluster_ids(rel, ev_map)
 
 
-def test_holdout_generalization():
-    holdout_rel_candidates = [
+def load_ground_truth():
+    # Hidden ground truth first
+    events_paths = ["/opt/eval/events.jsonl", "/app/data/events.jsonl"]
+    queries_paths = ["/opt/eval/queries.jsonl", "/app/data/queries.jsonl"]
+    h_queries_paths = [
+        "/opt/eval/holdout_queries.jsonl",
+        "/app/data/holdout_queries.jsonl",
+    ]
+    relevance_paths = ["/opt/eval/relevance.jsonl", "/app/data/relevance.jsonl"]
+    h_relevance_paths = [
         "/opt/eval/holdout_relevance.jsonl",
         "/app/data/holdout_relevance.jsonl",
-        "/tests/data/holdout_relevance.jsonl",
     ]
-    holdout_rel_path = None
-    for p in holdout_rel_candidates:
-        if os.path.exists(p):
-            holdout_rel_path = p
-            break
 
-    # Load report for holdout recall if present
-    with open("/output/eval_report.json") as f:
-        report = json.load(f)
+    def first_existing(paths):
+        for p in paths:
+            if os.path.exists(p):
+                return p
+        return None
 
-    holdout_recall = report.get("holdout_recall_at_10") or report.get("holdout_recall")
-    train_recall = (
-        report.get("improved_recall_at_10") or report.get("recall_at_10") or 0.0
-    )
+    events_file = first_existing(events_paths)
+    queries_file = first_existing(queries_paths)
+    h_queries_file = first_existing(h_queries_paths)
+    rel_file = first_existing(relevance_paths)
+    h_rel_file = first_existing(h_relevance_paths)
 
-    if holdout_recall is not None:
-        ratio = holdout_recall / max(train_recall, 1e-6)
-        os.makedirs("/logs/verifier", exist_ok=True)
-        with open("/logs/verifier/holdout_score.txt", "w") as hf:
-            hf.write(f"{holdout_recall}\n")
-        with open("/logs/verifier/holdout_ratio.txt", "w") as rf:
-            rf.write(f"{ratio:.3f}\n")
-        assert ratio >= 0.8, (
-            f"Holdout degraded too much: holdout {holdout_recall:.3f} / train {train_recall:.3f} = {ratio:.3f} < 0.8"
-        )
-        return
+    events = {}
+    queries = {}
+    h_queries = {}
+    relevance = {}
+    h_relevance = {}
 
-    if holdout_rel_path is None:
-        # No holdout data, try to recompute if holdout queries exist
-        holdout_q_path = "/app/data/holdout_queries.jsonl"
-        events_path = "/app/data/events.jsonl"
-        if not os.path.exists(holdout_q_path) or not os.path.exists(events_path):
-            return
-        # recompute relevance on-the-fly
-        events = load_jsonl(events_path)
+    if events_file:
+        events = {e["id"]: e for e in load_jsonl(events_file)}
+    if queries_file:
+        queries = {q["id"]: q for q in load_jsonl(queries_file)}
+    if h_queries_file:
+        h_queries = {q["id"]: q for q in load_jsonl(h_queries_file)}
+    if rel_file:
+        relevance = {
+            r["query_id"]: set(r["relevant_event_ids"]) for r in load_jsonl(rel_file)
+        }
+    if h_rel_file:
+        h_relevance = {
+            r["query_id"]: set(r["relevant_event_ids"]) for r in load_jsonl(h_rel_file)
+        }
+
+    # Recompute relevance if missing (to avoid leakage, we don't require baked file)
+    if not relevance and events and queries:
         cutoff = datetime(2026, 2, 1)
-        valid_events = [
+        valid = [
             e
-            for e in events
+            for e in events.values()
             if not e.get("is_spam")
             and datetime.fromisoformat(e["start_time"]) >= cutoff
         ]
-        ev_map = {e["id"]: e for e in valid_events}
+        ev_map = {e["id"]: e for e in valid}
         by_city = defaultdict(list)
-        for e in valid_events:
+        for e in valid:
             by_city[e["city"]].append(e)
-        h_queries = load_jsonl(holdout_q_path)
-        rel_map = {
-            q["id"]: set(compute_relevance_for_query(q, valid_events, ev_map, by_city))
-            for q in h_queries
-        }
-        holdout_rel_path = None  # we have rel_map computed
-    else:
-        rel_map = {
-            r["query_id"]: set(r["relevant_event_ids"])
-            for r in load_jsonl(holdout_rel_path)
-        }
+        for qid, q in queries.items():
+            relevance[qid] = set(compute_relevance_for_query(q, valid, ev_map, by_city))
 
-    retrieved_path = "/output/holdout_retrieved.jsonl"
-    if not os.path.exists(retrieved_path):
-        return
+    if not h_relevance and events and h_queries:
+        cutoff = datetime(2026, 2, 1)
+        valid = [
+            e
+            for e in events.values()
+            if not e.get("is_spam")
+            and datetime.fromisoformat(e["start_time"]) >= cutoff
+        ]
+        ev_map = {e["id"]: e for e in valid}
+        by_city = defaultdict(list)
+        for e in valid:
+            by_city[e["city"]].append(e)
+        for qid, q in h_queries.items():
+            h_relevance[qid] = set(
+                compute_relevance_for_query(q, valid, ev_map, by_city)
+            )
 
-    # If rel_map not yet defined because we had path, ensure defined
-    if "rel_map" not in locals():
-        rel_map = {
-            r["query_id"]: set(r["relevant_event_ids"])
-            for r in load_jsonl(holdout_rel_path)
-        }
+    return events, queries, h_queries, relevance, h_relevance
 
+
+def test_holdout_generalization():
+    events, queries, h_queries, relevance, h_relevance = load_ground_truth()
+
+    # Load retrieved outputs
     retrieved = {}
-    with open(retrieved_path) as f:
-        for line in f:
-            obj = json.loads(line)
-            retrieved[obj["query_id"]] = obj.get("retrieved_ids", [])
+    h_retrieved = {}
+    if os.path.exists("/output/retrieved.jsonl"):
+        with open("/output/retrieved.jsonl") as f:
+            for line in f:
+                obj = json.loads(line)
+                retrieved[obj["query_id"]] = obj.get("retrieved_ids", [])
+    if os.path.exists("/output/holdout_retrieved.jsonl"):
+        with open("/output/holdout_retrieved.jsonl") as f:
+            for line in f:
+                obj = json.loads(line)
+                h_retrieved[obj["query_id"]] = obj.get("retrieved_ids", [])
 
-    recalls = []
-    for qid, rel_ids in rel_map.items():
-        if not rel_ids:
-            continue
-        ret = retrieved.get(qid, [])
-        hits = len(set(ret[:10]) & rel_ids)
-        recalls.append(hits / len(rel_ids))
-
-    if not recalls:
+    # If no holdout retrieved, skip
+    if not h_retrieved and not h_relevance:
         return
 
-    h_score = sum(recalls) / len(recalls)
+    # Recompute train and holdout recall independently from retrieved files (don't trust report)
+    def recall_from_dict(ret_dict, rel_dict):
+        rec = []
+        for qid, rel_ids in rel_dict.items():
+            if not rel_ids:
+                continue
+            ret = ret_dict.get(qid, [])
+            hits = len(set(ret[:10]) & rel_ids)
+            rec.append(hits / len(rel_ids))
+        return sum(rec) / len(rec) if rec else 0.0
+
+    train_recall = recall_from_dict(retrieved, relevance)
+    h_score = recall_from_dict(h_retrieved, h_relevance)
+
+    # Also read report for logging but not for decision
+    report_train = 0.0
+    report_holdout = None
+    if os.path.exists("/output/eval_report.json"):
+        with open("/output/eval_report.json") as f:
+            rep = json.load(f)
+            report_train = (
+                rep.get("improved_recall_at_10") or rep.get("recall_at_10") or 0.0
+            )
+            report_holdout = rep.get("holdout_recall_at_10") or rep.get(
+                "holdout_recall"
+            )
+
+    os.makedirs("/logs/verifier", exist_ok=True)
     with open("/logs/verifier/holdout_score.txt", "w") as hf:
         hf.write(f"{h_score}\n")
     with open("/logs/verifier/holdout_ratio.txt", "w") as rf:
-        rf.write(f"{h_score / max(train_recall, 1e-6):.3f}\n")
+        ratio = h_score / max(train_recall, 1e-6)
+        rf.write(f"{ratio:.3f}\n")
 
-    assert h_score >= 0.45, f"Holdout recall {h_score:.3f} too low (<0.45)"
+    # Absolute threshold on holdout (spec says >=0.45)
+    assert h_score >= 0.45, f"Holdout recall recomputed {h_score:.3f} too low (<0.45)"
+
+    # Ratio check (spec says >=0.8) - only if train recall non-zero
+    if train_recall > 0:
+        ratio = h_score / max(train_recall, 1e-6)
+        assert ratio >= 0.8, (
+            f"Holdout degraded too much: holdout {h_score:.3f} / train {train_recall:.3f} = {ratio:.3f} < 0.8"
+        )

@@ -3,8 +3,15 @@ import os
 from datetime import datetime
 
 
+def first_existing(paths):
+    for p in paths:
+        if os.path.exists(p):
+            return p
+    return paths[-1]
+
+
 def test_events_schema():
-    path = "/app/data/events.jsonl"
+    path = first_existing(["/opt/eval/events.jsonl", "/app/data/events.jsonl"])
     with open(path) as f:
         for i, line in enumerate(f):
             if i >= 10:
@@ -17,12 +24,12 @@ def test_events_schema():
             assert "city" in ev
             assert "lat" in ev and "lng" in ev
             assert "start_time" in ev
-            # parse time
             datetime.fromisoformat(ev["start_time"])
 
 
 def test_queries_schema():
-    with open("/app/data/queries.jsonl") as f:
+    path = first_existing(["/opt/eval/queries.jsonl", "/app/data/queries.jsonl"])
+    with open(path) as f:
         q = json.loads(next(f))
     assert "id" in q
     assert "text" in q
@@ -34,12 +41,10 @@ def test_queries_schema():
 def test_output_schema():
     with open("/output/rag_config.json") as f:
         cfg = json.load(f)
-    # must declare improvement method
     assert "improvement_method" in cfg or "self_improvement" in cfg or "method" in cfg
 
     with open("/output/eval_report.json") as f:
         rep = json.load(f)
-    # must have at least recall metrics
     assert any(
         k in rep
         for k in [
