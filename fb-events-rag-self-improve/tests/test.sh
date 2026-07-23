@@ -42,11 +42,16 @@ if [ -f /tests/test_baseline.py ]; then
   fi
 fi
 
-# Reference anchor informational
+# Reference anchor informational (must not be || true - should be blocking if present, but keep as info)
 if [ -f /tests/test_reference.py ]; then
   set +e
-  pytest /tests/test_reference.py -v --tb=short 2>&1 || true
+  pytest /tests/test_reference.py -v --tb=short 2>&1
+  REF_EXIT=$?
   set -e
+  # don't fail main reward on reference, but log
+  if [ $REF_EXIT -ne 0 ]; then
+    echo reference_failed >> /logs/verifier/reference_status.txt 2>/dev/null || true
+  fi
 fi
 
 # Main scoring
@@ -68,8 +73,14 @@ else
 
   if [ -f /tests/test_holdout.py ]; then
     set +e
-    pytest /tests/test_holdout.py -v --tb=short 2>&1 || true
+    pytest /tests/test_holdout.py -v --tb=short 2>&1
+    HOLDOUT_EXIT=$?
     set -e
+    if [ $HOLDOUT_EXIT -ne 0 ]; then
+      echo holdout_failed > /logs/verifier/failure_mode.txt
+      echo 0 > /logs/verifier/reward.txt
+      exit 0
+    fi
   fi
 fi
 

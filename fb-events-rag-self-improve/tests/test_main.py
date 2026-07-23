@@ -2,6 +2,7 @@
 Main scoring for self-improving RAG.
 Fixes HIGH issues: recompute recall independently from retrieved.jsonl vs hidden ground truth, don't trust eval_report floats.
 Ground truth loaded from hidden /opt/eval first (not agent-writable /app/data), fallback to /app/data for local runs.
+Fixes Test Quality: no early return on empty input, holdout blocking, self-improvement loop explicitly tested.
 """
 
 import json
@@ -40,9 +41,8 @@ def load_ground_truth():
             relevance = {r["query_id"]: r["relevant_event_ids"] for r in load_jsonl(rp)}
             break
 
-    # If no baked relevance (to avoid leakage, we may not have it in /app), recompute using deterministic rule
     if not relevance:
-        # recompute using same rule as generator
+
         def dedup_ids(ids, ev_map):
             cluster_best = {}
             single = []
@@ -155,9 +155,6 @@ def load_agent_output():
 
 
 def compute_baseline_recall(events, queries, relevance):
-    """Trivial popularity baseline: filter city+category+time+geo+dedup+spam, sort pop (no facet check? Actually baseline for lift should ignore facet to show lift)"""
-    # For lift test, baseline should be facet-blind popularity to demonstrate improvement
-    # But we compute baseline that IGNORES facet (as in original trivial baseline) vs improved that uses facet
     cutoff = datetime(2026, 2, 1)
     valid = [
         e
@@ -179,14 +176,12 @@ def compute_baseline_recall(events, queries, relevance):
         for ev in by_city.get(q["city"], []):
             if q.get("category") and ev["category"] != q.get("category"):
                 continue
-            # NOTE: baseline ignores facet to show low recall
             ev_start = datetime.fromisoformat(ev["start_time"])
             if not (ws <= ev_start <= we):
                 continue
             if haversine(q["lat"], q["lng"], ev["lat"], ev["lng"]) > q["radius_km"]:
                 continue
             filtered.append(ev)
-        # dedup
         cluster_best = {}
         singles = []
         for ev in filtered:
@@ -223,19 +218,10 @@ def compute_improved_recall_from_output(events, queries, relevance):
 
 
 def test_self_improvement_lift():
-    """Directional: improved recall must beat baseline by margin - recomputed independently, not trusting report"""
+    """Directional: improved recall must beat baseline by margin - recomputed independently"""
     events, queries, relevance = load_ground_truth()
     baseline_recall = compute_baseline_recall(events, queries, relevance)
     improved_recall, _ = compute_improved_recall_from_output(events, queries, relevance)
-
-    # Also read report for informational, but don't trust for scoring
-    _, report = load_agent_output()
-    report_improved = (
-        report.get("improved_recall_at_10") or report.get("recall_at_10") or 0.0
-    )
-    # Ensure report not wildly fabricating vs recomputed (allow 0.15 diff for different baseline defs)
-    # We don't fail on fabrication, we use recomputed for lift
-
     assert improved_recall > baseline_recall + 0.08, (
         f"Expected lift (recomputed): improved {improved_recall:.3f} > baseline {baseline_recall:.3f} + 0.08"
     )
@@ -249,18 +235,38 @@ def test_recall_absolute_threshold():
     )
 
 
+def test_self_improvement_loop_executed():
+    """Explicitly test that self-improvement loop artifacts exist"""
+    retrieved, report = load_agent_output()
+    assert retrieved, (
+        "Missing /output/retrieved.jsonl - self-improvement loop must produce retrieval output"
+    )
+    # Check eval_report has lift and method indicating improvement
+    assert "lift" in report or "baseline_recall_at_10" in report, (
+        "eval_report must contain lift / baseline metrics from self-eval loop"
+    )
+    assert report.get("improved_recall_at_10", 0) > report.get(
+        "baseline_recall_at_10", 0
+    ), "Self-improvement loop must show improved > baseline"
+    # Check rag_config declares self-improvement
+    with open("/output/rag_config.json") as f:
+        cfg = json.load(f)
+    assert cfg.get("self_improvement") or "improvement_method" in cfg, (
+        "rag_config must declare self-improvement"
+    )
+    blob = json.dumps(cfg).lower()
+    # Must mention at least two improvement techniques
+    techniques = ["filter", "rewrite", "rerank", "dedup", "facet", "semantic"]
+    matches = sum(1 for t in techniques if t in blob)
+    assert matches >= 2, (
+        f"rag_config should describe at least 2 improvement techniques, got {matches}"
+    )
+
+
 def test_constraint_time_filter():
-    _, report = load_agent_output()
-    retrieved, _ = load_agent_output()
+    retrieved, report = load_agent_output()
     events, queries, _ = load_ground_truth()
-
-    if not retrieved:
-        assert (
-            report.get("time_filter_pass_rate", 1.0) >= 0.95
-            or "constraint" in json.dumps(report).lower()
-        )
-        return
-
+    assert retrieved, "Missing retrieved.jsonl - cannot test time filter"
     violations = 0
     total = 0
     for qid, r_ids in retrieved.items():
@@ -277,9 +283,7 @@ def test_constraint_time_filter():
             total += 1
             if not (ws <= ev_start <= we):
                 violations += 1
-
-    if total == 0:
-        return
+    assert total > 0, "No retrieved IDs to check time filter"
     violation_rate = violations / total
     assert violation_rate <= 0.10, (
         f"Time window violation rate {violation_rate:.2%} > 10% ({violations}/{total})"
@@ -288,9 +292,8 @@ def test_constraint_time_filter():
 
 def test_constraint_geo_filter():
     retrieved, _ = load_agent_output()
-    if not retrieved:
-        return
     events, queries, _ = load_ground_truth()
+    assert retrieved, "Missing retrieved.jsonl - cannot test geo filter"
     violations = 0
     total = 0
     for qid, r_ids in retrieved.items():
@@ -307,18 +310,15 @@ def test_constraint_geo_filter():
             total += 1
             if d > radius + 1e-6:
                 violations += 1
-
-    if total == 0:
-        return
+    assert total > 0, "No retrieved IDs to check geo filter"
     rate = violations / total
     assert rate <= 0.15, f"Geo radius violation {rate:.2%} > 15%"
 
 
 def test_dedup_handling():
     retrieved, _ = load_agent_output()
-    if not retrieved:
-        return
     events, _, _ = load_ground_truth()
+    assert retrieved, "Missing retrieved.jsonl - cannot test dedup"
     dup_queries = 0
     for qid, r_ids in retrieved.items():
         seen_clusters = {}
@@ -332,9 +332,7 @@ def test_dedup_handling():
                     dup_queries += 1
                     break
                 seen_clusters[cid] = eid
-
-    if len(retrieved) == 0:
-        return
+    assert len(retrieved) > 0, "No retrieved queries"
     dup_rate = dup_queries / len(retrieved)
     assert dup_rate <= 0.30, (
         f"Dedup failure: {dup_rate:.2%} queries contain duplicate cluster members in top10"
@@ -372,9 +370,8 @@ def test_eval_system_exists():
 
 def test_no_spam_retrieved():
     retrieved, _ = load_agent_output()
-    if not retrieved:
-        return
     events, _, _ = load_ground_truth()
+    assert retrieved, "Missing retrieved.jsonl - cannot test spam filter"
     spam_hits = 0
     total = 0
     for r_ids in retrieved.values():
@@ -384,8 +381,7 @@ def test_no_spam_retrieved():
             total += 1
             if events[eid].get("is_spam"):
                 spam_hits += 1
-    if total == 0:
-        return
+    assert total > 0, "No retrieved IDs to check spam"
     rate = spam_hits / total
     assert rate <= 0.05, f"Spam rate in top10 {rate:.2%} > 5%"
 
@@ -394,4 +390,7 @@ def test_reference_toy():
     retrieved, _ = load_agent_output()
     events, queries, relevance = load_ground_truth()
     improved_recall, _ = compute_improved_recall_from_output(events, queries, relevance)
-    assert improved_recall >= 0.5, "Recall too low for non-trivial solution"
+    assert retrieved, "Missing retrieved.jsonl"
+    assert improved_recall >= 0.5, (
+        f"Recall too low for non-trivial solution: {improved_recall:.3f}"
+    )
