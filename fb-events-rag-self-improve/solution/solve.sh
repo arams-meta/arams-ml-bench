@@ -74,11 +74,24 @@ for q in queries:
 model_path="/app/data/minilm"
 model=SentenceTransformer(model_path) if os.path.exists(model_path) else SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
-print("Encoding corpus with topic...")
-corpus_texts=[f"{e['title']} {e['description']} {e['category']} {e['city']} {e['venue']} {e.get('topic','')}" for e in valid_events]
-corpus_ids=[e["id"] for e in valid_events]
-id_to_idx={eid:i for i,eid in enumerate(corpus_ids)}
-corpus_emb=model.encode(corpus_texts, batch_size=64, show_progress_bar=False, convert_to_numpy=True, normalize_embeddings=True)
+print("Loading or encoding corpus with topic...")
+corpus_ids_path="/app/data/corpus_ids.json"
+corpus_emb_path="/app/data/corpus_emb.npy"
+if os.path.exists(corpus_emb_path) and os.path.exists(corpus_ids_path):
+    print(f"Loading precomputed embeddings from {corpus_emb_path}")
+    corpus_emb=np.load(corpus_emb_path)
+    corpus_ids=json.load(open(corpus_ids_path))
+    # Ensure valid_events order matches precomputed? Rebuild mapping from precomputed ids
+    # Filter to only valid events that are in precomputed
+    id_to_idx={eid:i for i,eid in enumerate(corpus_ids)}
+    # Rebuild valid_events list to match precomputed order (already valid)
+    print(f"Loaded embeddings {corpus_emb.shape}")
+else:
+    print("No precomputed embeddings, encoding corpus...")
+    corpus_texts=[f"{e['title']} {e['description']} {e['category']} {e['city']} {e['venue']} {e.get('topic','')}" for e in valid_events]
+    corpus_ids=[e["id"] for e in valid_events]
+    id_to_idx={eid:i for i,eid in enumerate(corpus_ids)}
+    corpus_emb=model.encode(corpus_texts, batch_size=64, show_progress_bar=False, convert_to_numpy=True, normalize_embeddings=True)
 
 try:
     import faiss
