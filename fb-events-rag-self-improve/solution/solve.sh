@@ -477,17 +477,27 @@ with open("/output/eval_report.json","w") as f:
 print("Done")
 PY
 
-# Run as agentuser to enforce isolation: /opt/eval is 700 root-only, so agentuser cannot read hidden labels
-# This proves golden solves from /app/data only (free-form text + events), same info as agents
-if id agentuser &>/dev/null; then
-  echo "Running oracle as agentuser (restricted, cannot read /opt/eval) to prove isolation"
-  su agentuser -s /bin/bash -c "python3 /app/oracle_impl.py" || python3 /app/oracle_impl.py
-else
-  python3 /app/oracle_impl.py
+# Enforce non-root isolation defense-in-depth: if running as root, drop to agentuser so /opt/eval 700 remains unreadable
+# No sudo granted to agentuser, so cannot bypass - fixes High sudoers issue and Medium Env isolation depends on USER
+if [ "$(id -u)" = "0" ]; then
+  if id agentuser &>/dev/null; then
+    echo "Running as root, dropping to agentuser for isolation (defense-in-depth)..."
+    exec su agentuser -s /bin/bash -c "bash $0 $*"
+  else
+    echo "ERROR: running as root without agentuser - isolation requires non-root" >&2
+    exit 1
+  fi
 fi
+
+# Now running as agentuser - verify hidden not readable (defense-in-depth)
+if [ -r /opt/eval/queries.jsonl ]; then
+  echo "ERROR: hidden /opt/eval/queries.jsonl readable at solve time - isolation broken!" >&2
+  ls -ld /opt/eval/ 2>&1
+  exit 1
+fi
+
+# Run oracle as current user (already agentuser, no fallback to root that undermines isolation)
+python3 /app/oracle_impl.py
 ls -lh /output/
-# Verify isolation: agentuser should NOT be able to read /opt/eval/relevance (which doesn't exist) nor /opt/eval/queries with structured fields
-if id agentuser &>/dev/null; then
-  echo "Checking isolation: agentuser reading /opt/eval..."
-  su agentuser -s /bin/bash -c "ls /opt/eval/ 2>&1 | head; cat /opt/eval/queries.jsonl 2>&1 | head -1" || echo "agentuser cannot read /opt/eval - good isolation (700 perms)"
-fi
+echo "Checking isolation: agentuser reading /opt/eval should fail..."
+ls /opt/eval/ 2>&1 | head || echo "agentuser cannot read /opt/eval - good isolation (700 perms, USER agentuser enforced, no sudo)"
