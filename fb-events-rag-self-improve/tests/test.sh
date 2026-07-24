@@ -5,8 +5,9 @@ mkdir -p /logs/verifier
 
 # Isolation: /opt/eval is chmod 700 root-only at build to prevent agent reading during solver phase.
 # For verifier (tests) we make it readable. Behavioral test checks it was unreadable from agentuser.
-chmod 755 /opt/eval 2>/dev/null || true
-chmod 644 /opt/eval/* 2>/dev/null || true
+# Dockerfile now enforces USER agentuser for solver isolation; verifier needs sudo to read hidden ground truth
+sudo chmod 755 /opt/eval 2>/dev/null || chmod 755 /opt/eval 2>/dev/null || true
+sudo chmod 644 /opt/eval/* 2>/dev/null || chmod 644 /opt/eval/* 2>/dev/null || true
 
 START_SEC=$(date +%s)
 
