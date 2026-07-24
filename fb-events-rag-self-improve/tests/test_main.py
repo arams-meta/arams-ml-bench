@@ -267,35 +267,14 @@ def test_constraint_time_filter():
     retrieved, report = load_agent_output()
     events, queries, _ = load_ground_truth()
     assert retrieved, "Missing retrieved.jsonl - cannot test time filter"
-
-    # For free-form tasks, check against parsed_filters time window if available (agent's extracted filters)
-    # Otherwise check against hidden ground truth time window
-    parsed_filters = {}
-    if os.path.exists("/output/parsed_filters.jsonl"):
-        with open("/output/parsed_filters.jsonl") as f:
-            for line in f:
-                pf = json.loads(line)
-                parsed_filters[pf["query_id"]] = pf
-
     violations = 0
     total = 0
     for qid, r_ids in retrieved.items():
         if qid not in queries:
             continue
-        # Prefer parsed filter time window for constraint check (since agent extracts from free-form)
-        # Fallback to hidden ground truth
-        if qid in parsed_filters and "time_window_start" in parsed_filters[qid]:
-            try:
-                ws = datetime.fromisoformat(parsed_filters[qid]["time_window_start"])
-                we = datetime.fromisoformat(parsed_filters[qid]["time_window_end"])
-            except:
-                q = queries[qid]
-                ws = datetime.fromisoformat(q["time_window_start"])
-                we = datetime.fromisoformat(q["time_window_end"])
-        else:
-            q = queries[qid]
-            ws = datetime.fromisoformat(q["time_window_start"])
-            we = datetime.fromisoformat(q["time_window_end"])
+        q = queries[qid]
+        ws = datetime.fromisoformat(q["time_window_start"])
+        we = datetime.fromisoformat(q["time_window_end"])
         for eid in r_ids[:10]:
             if eid not in events:
                 continue
@@ -304,12 +283,10 @@ def test_constraint_time_filter():
             total += 1
             if not (ws <= ev_start <= we):
                 violations += 1
-
     assert total > 0, "No retrieved IDs to check time filter"
     violation_rate = violations / total
-    # Allow up to 15% violation for free-form extraction (time phrase ambiguous)
-    assert violation_rate <= 0.15, (
-        f"Time window violation rate {violation_rate:.2%} > 15% ({violations}/{total})"
+    assert violation_rate <= 0.10, (
+        f"Time window violation rate {violation_rate:.2%} > 10% ({violations}/{total})"
     )
 
 
@@ -317,28 +294,14 @@ def test_constraint_geo_filter():
     retrieved, _ = load_agent_output()
     events, queries, _ = load_ground_truth()
     assert retrieved, "Missing retrieved.jsonl - cannot test geo filter"
-
-    parsed_filters = {}
-    if os.path.exists("/output/parsed_filters.jsonl"):
-        with open("/output/parsed_filters.jsonl") as f:
-            for line in f:
-                pf = json.loads(line)
-                parsed_filters[pf["query_id"]] = pf
-
     violations = 0
     total = 0
     for qid, r_ids in retrieved.items():
         if qid not in queries:
             continue
-        # Prefer parsed geo for constraint check
-        if qid in parsed_filters and "lat" in parsed_filters[qid]:
-            q_lat = parsed_filters[qid]["lat"]
-            q_lng = parsed_filters[qid]["lng"]
-            radius = parsed_filters[qid].get("radius_km", 50)
-        else:
-            q = queries[qid]
-            q_lat, q_lng = q["lat"], q["lng"]
-            radius = q["radius_km"]
+        q = queries[qid]
+        q_lat, q_lng = q["lat"], q["lng"]
+        radius = q["radius_km"]
         for eid in r_ids[:10]:
             if eid not in events:
                 continue
@@ -349,8 +312,7 @@ def test_constraint_geo_filter():
                 violations += 1
     assert total > 0, "No retrieved IDs to check geo filter"
     rate = violations / total
-    # Allow up to 20% for free-form geo (city center extraction)
-    assert rate <= 0.20, f"Geo radius violation {rate:.2%} > 20%"
+    assert rate <= 0.15, f"Geo radius violation {rate:.2%} > 15%"
 
 
 def test_dedup_handling():

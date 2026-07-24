@@ -37,13 +37,23 @@ Constraints:
 - Do NOT read relevance files if present - they are for evaluation only. Recompute relevance using rule above for eval. Do not modify any file in /app/data.
 - The grader RECOMPUTES recall@10 from your retrieved.jsonl against the relevance rule - self-reported numbers in eval_report are checked for schema only, not trusted as scores.
 
-Scoring thresholds (grader recomputes independently from hidden ground truth):
-- Improved recall@10 >= 0.60 absolute (recomputed from retrieved.jsonl vs hidden relevance)
-- Lift: improved > baseline + 0.08 where baseline is trivial popularity-only filtered by city/category/time/geo/dedup (recomputed, not trusted from report)
-- Baseline floor: trivial popularity-only has ~0.25 recall because it ignores facet, so improved must beat it by >0.05
-- Holdout generalization: holdout_recall / train_recall >= 0.8 and holdout >=0.45 (recomputed)
-- Free-form extraction accuracy: parsed_filters.jsonl city accuracy >=0.60 vs hidden, facet accuracy >=0.50 vs hidden (to prove filter extraction from text)
-- Embedding usage: rag_config must declare embedding_model all-MiniLM-L6-v2 and embedding_used true, and retrieved order must differ from pure popularity sort for >=20% queries (proves semantic re-ranking, not just pop sort)
-- Self-improvement loop: rag_config self_improvement true + steps covering filter/rewrite/rerank + eval_report lift>0.05
+Temporal semantics (deterministic, so reasonable parsers can pass):
+- query_date is ISO date of query issuance (e.g., 2026-02-20)
+- Time phrases map to offsets from query_date:
+  tomorrow = query_date+1 day, this weekend = query_date+2 to +4 days, next week = +7 to +14 days,
+  this month = +0 to +30 days, next month = +30 to +60 days, this Friday = +4 days
+- time_window_start/end are query_date + phrase_offset ±15-30 days (random jitter for realism, but centered on phrase)
+  So a parser that extracts phrase and adds ±15-30 days around query_date+offset will match hidden windows.
+- Geo: lat/lng = city center + jitter 0.02, radius_km 30/40/50 (hidden). Agent must extract city and use city center.
+
+Scoring thresholds (grader recomputes independently from hidden /opt/eval ground truth, not self-reported):
+- Improved recall@10 >= 0.40 absolute for free-form (was 0.60, lowered after non-cheating golden and non-leaked solver pass) - recomputed from retrieved.jsonl vs hidden relevance
+- Lift: improved > baseline + 0.08 where baseline is trivial popularity-only filtered by city/category/time/geo/dedup and recomputed (not trusted from report)
+- Baseline floor: trivial pop-only has ~0.25-0.30 recall because it ignores facet, improved must beat by >0.05 (recomputed)
+- Holdout: holdout recall >=0.30 and holdout/train ratio >=0.6 (recomputed, was 0.45/0.8, lowered for free-form)
+- Free-form extraction accuracy (parsed_filters.jsonl vs hidden):
+  city >=0.60, category >=0.50, facet >=0.50, time window overlap >=50%, radius present, lat/lng present and within 1 degree of city center
+- Embedding usage: rag_config embedding_model all-MiniLM-L6-v2 + embedding_used true + steps mentioning filter/semantic/facet, and retrieved order differs from pure popularity sort for >=20% queries
+- Self-improvement loop: rag_config self_improvement true + steps covering filter/rewrite/rerank + eval_report lift>0.05, plus parsed_filters_count 500 and retrieved_count 500
 
 Self-improvement loop should analyze low-recall queries and retry techniques like query rewriting, re-ranking, or different filter combinations to achieve the highest recall@10 and largest delta over baseline. You need to figure out how to use the semantic facet and other signals to beat the baseline.

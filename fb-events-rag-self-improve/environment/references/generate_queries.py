@@ -157,29 +157,39 @@ def make_single_query(
         category = anchor_ev["category"]
         facet = anchor_ev.get("topic") or anchor_ev.get("category") or "general"
         ev_start = parse_time(anchor_ev["start_time"])
-        # Larger window to increase distractors for popularity baseline to fail: ±15-30 days -> bigger candidate pool
-        window_start = (ev_start - timedelta(days=random.randint(15, 30))).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
-        window_end = (ev_start + timedelta(days=random.randint(15, 30))).replace(
-            hour=23, minute=59, second=0, microsecond=0
-        )
-        q_lat = anchor_ev["lat"] + random.uniform(-0.02, 0.02)
-        q_lng = anchor_ev["lng"] + random.uniform(-0.02, 0.02)
-        # Larger radius to increase candidate pool for baseline failure
-        radius_km = random.choice([30, 40, 50])
         delta = (ev_start - base_anchor).days
         if delta <= 2:
             time_phrase = "tomorrow"
+            phrase_offset = 1
         elif delta <= 7:
             time_phrase = "this weekend"
+            phrase_offset = 3
         elif delta <= 14:
             time_phrase = "next week"
+            phrase_offset = 10
         elif delta <= 31:
             time_phrase = "this month"
+            phrase_offset = 15
         else:
             time_phrase = "next month"
+            phrase_offset = 45
+
         query_date = base_anchor + timedelta(days=random.randint(-3, 10))
+        # Temporal semantics deterministic from query_date: window = query_date + phrase_offset ±15-30
+        # This makes it so reasonable parsers extracting phrase and using query_date can match hidden windows
+        window_start = (
+            query_date
+            + timedelta(days=phrase_offset)
+            - timedelta(days=random.randint(15, 30))
+        ).replace(hour=0, minute=0, second=0, microsecond=0)
+        window_end = (
+            query_date
+            + timedelta(days=phrase_offset)
+            + timedelta(days=random.randint(15, 30))
+        ).replace(hour=23, minute=59, second=0, microsecond=0)
+        q_lat = anchor_ev["lat"] + random.uniform(-0.02, 0.02)
+        q_lng = anchor_ev["lng"] + random.uniform(-0.02, 0.02)
+        radius_km = random.choice([30, 40, 50])
         anchor_id = anchor_ev["id"]
     else:
         # random query: pick city, category, and a random facet from valid events in that city
