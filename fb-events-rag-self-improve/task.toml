@@ -25,4 +25,8 @@ tags = ["ml", "ml-bench", "llm-research", "llm", "rag", "self-improvement", "cpu
 [environment]
 python_version = "3.10"
 allow_internet = true
+build_timeout_sec = 2400
+cpus = 2
+memory_mb = 8192
+storage_mb = 10240
 requirements = ["sentence-transformers==2.2.2", "faiss-cpu==1.7.4", "numpy==1.24.3", "scikit-learn==1.3.0", "pandas==2.0.3"]
