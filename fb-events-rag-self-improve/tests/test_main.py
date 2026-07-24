@@ -280,18 +280,19 @@ def test_recall_absolute_threshold():
 
 
 def test_self_improvement_loop_executed():
-    """Explicitly test that self-improvement loop artifacts exist"""
+    """Explicitly test that self-improvement loop artifacts exist - does not trust self-reported floats per spec, only checks existence"""
     retrieved, report = load_agent_output()
     assert retrieved, (
         "Missing /output/retrieved.jsonl - self-improvement loop must produce retrieval output"
     )
-    # Check eval_report has lift and method indicating improvement
+    # Check eval_report has lift and method indicating improvement - existence only, not trusting float per spec
+    # Spec says grader RECOMPUTES recall from retrieved.jsonl, self-reported numbers are schema only
     assert "lift" in report or "baseline_recall_at_10" in report, (
-        "eval_report must contain lift / baseline metrics from self-eval loop"
+        "eval_report must contain lift / baseline metrics from self-eval loop (existence, not float trust)"
     )
-    assert report.get("improved_recall_at_10", 0) > report.get(
-        "baseline_recall_at_10", 0
-    ), "Self-improvement loop must show improved > baseline"
+    assert "improved_recall_at_10" in report or "recall_at_10" in report, (
+        "eval_report must contain improved recall field"
+    )
     # Check rag_config declares self-improvement
     with open("/output/rag_config.json") as f:
         cfg = json.load(f)
