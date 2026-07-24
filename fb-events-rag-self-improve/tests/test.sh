@@ -3,6 +3,11 @@
 set -uo pipefail
 mkdir -p /logs/verifier
 
+# Isolation: /opt/eval is chmod 700 root-only at build to prevent agent reading during solver phase.
+# For verifier (tests) we make it readable. Behavioral test checks it was unreadable from agentuser.
+chmod 755 /opt/eval 2>/dev/null || true
+chmod 644 /opt/eval/* 2>/dev/null || true
+
 START_SEC=$(date +%s)
 
 # Smoke
@@ -69,7 +74,18 @@ if [ $EXIT -ne 0 ]; then
     || echo unknown > /logs/verifier/failure_mode.txt
   echo 0 > /logs/verifier/reward.txt
 else
-  echo 1 > /logs/verifier/reward.txt
+  # Behavioral and anti-cheating checks (must pass, per TBR feedback)
+  if [ -f /tests/test_behavioral.py ]; then
+    set +e
+    pytest /tests/test_behavioral.py -v --tb=short 2>&1
+    BEHAV_EXIT=$?
+    set -e
+    if [ $BEHAV_EXIT -ne 0 ]; then
+      echo behavioral_failed > /logs/verifier/failure_mode.txt
+      echo 0 > /logs/verifier/reward.txt
+      exit 0
+    fi
+  fi
 
   if [ -f /tests/test_holdout.py ]; then
     set +e
@@ -82,6 +98,8 @@ else
       exit 0
     fi
   fi
+
+  echo 1 > /logs/verifier/reward.txt
 fi
 
 END_SEC=$(date +%s)

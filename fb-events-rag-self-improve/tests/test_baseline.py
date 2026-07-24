@@ -1,19 +1,29 @@
 """
 Baseline floor: beats trivial popularity heuristic that ignores facet.
-Baseline filters by city + category + time window + geo radius + dedup + not spam, then sorts by popularity only (no facet/semantic).
-Since relevance now requires facet match, this baseline will have low recall (~0.2-0.3) and improved (filter+facet+semantic) will beat it.
+Per TBR: recompute improved recall from retrieved.jsonl vs hidden/recomputed ground truth, not trusting report.
+Ground truth from /opt/eval first (hidden) or host hidden full, fallback to free-form extraction.
 """
 
 import json
 import math
 import os
-from datetime import datetime
+import random
+from datetime import datetime, timedelta
 from collections import defaultdict
+
+random.seed(42)
 
 
 def load_jsonl(path):
     with open(path) as f:
         return [json.loads(line) for line in f]
+
+
+def first_existing(paths):
+    for p in paths:
+        if os.path.exists(p):
+            return p
+    return None
 
 
 def haversine(lat1, lon1, lat2, lon2):
@@ -58,42 +68,66 @@ def dedup_by_cluster_ids(rel_ids, ev_map):
     return deduped_sorted[:30]
 
 
-def compute_relevance_for_query(q, valid_events, ev_map, by_city):
-    q_lat = q["lat"]
-    q_lng = q["lng"]
-    ws = datetime.fromisoformat(q["time_window_start"])
-    we = datetime.fromisoformat(q["time_window_end"])
+def compute_relevance(q, ev_map, by_city):
+    city = q.get("city")
+    if not city:
+        return []
     facet = q.get("facet")
-    city = q["city"]
     cat = q.get("category")
-    radius = q["radius_km"]
+    try:
+        q_lat = q["lat"]
+        q_lng = q["lng"]
+        ws = datetime.fromisoformat(q["time_window_start"])
+        we = datetime.fromisoformat(q["time_window_end"])
+        radius = q["radius_km"]
+        has = True
+    except:
+        has = False
+        ws = we = None
+        q_lat = q_lng = None
+        radius = 500
     rel = []
-    cands = by_city.get(city, [])
-    for ev in cands:
+    for ev in by_city.get(city, []):
         if cat and ev["category"] != cat:
             continue
         if facet and ev.get("topic") != facet:
             continue
-        ev_start = datetime.fromisoformat(ev["start_time"])
-        if not (ws <= ev_start <= we):
-            continue
-        if haversine(q_lat, q_lng, ev["lat"], ev["lng"]) > radius:
-            continue
+        if has:
+            ev_start = datetime.fromisoformat(ev["start_time"])
+            if not (ws <= ev_start <= we):
+                continue
+            if haversine(q_lat, q_lng, ev["lat"], ev["lng"]) > radius:
+                continue
         rel.append(ev["id"])
     return dedup_by_cluster_ids(rel, ev_map)
 
 
-def trivial_baseline():
-    events = load_jsonl("/app/data/events.jsonl")
-    queries = load_jsonl("/app/data/queries.jsonl")
-
-    # Try multiple relevance locations, fallback to recompute (avoids info-leakage requirement)
-    relevance = {}
-    for rp in [
+def load_ground_truth():
+    events_paths = [
+        "/opt/eval/events.jsonl",
+        "/app/data/events.jsonl",
+        "data/events.jsonl",
+    ]
+    queries_paths = [
+        "/opt/eval/queries.jsonl",
+        "data/queries_full_hidden.jsonl",
+        "/app/data/queries.jsonl",
+        "data/queries.jsonl",
+    ]
+    rel_paths = [
         "/opt/eval/relevance.jsonl",
+        "data/relevance_hidden.jsonl",
         "/app/data/relevance.jsonl",
-        "/tests/data/relevance.jsonl",
-    ]:
+    ]
+
+    events_file = first_existing(events_paths) or "/app/data/events.jsonl"
+    queries_file = first_existing(queries_paths) or "/app/data/queries.jsonl"
+
+    events = [json.loads(l) for l in open(events_file)]
+    queries = [json.loads(l) for l in open(queries_file)]
+
+    relevance = {}
+    for rp in rel_paths:
         if os.path.exists(rp):
             relevance = {r["query_id"]: r["relevant_event_ids"] for r in load_jsonl(rp)}
             break
@@ -105,23 +139,145 @@ def trivial_baseline():
         if not e.get("is_spam") and datetime.fromisoformat(e["start_time"]) >= cutoff
     ]
     ev_map = {e["id"]: e for e in valid_events}
-    events_by_city = defaultdict(list)
+    by_city = defaultdict(list)
     for e in valid_events:
-        events_by_city[e["city"]].append(e)
+        by_city[e["city"]].append(e)
 
-    # If no baked relevance, recompute on-the-fly (facet rule)
-    recompute = not relevance
-    if recompute:
-        for q in queries:
-            relevance[q["id"]] = compute_relevance_for_query(
-                q, valid_events, ev_map, events_by_city
+    if not relevance:
+        all_cities = list(by_city.keys())
+        all_categories = [
+            "Music",
+            "Sports",
+            "Food",
+            "Tech",
+            "Arts",
+            "Nightlife",
+            "Community",
+            "Business",
+        ]
+        all_topics = sorted(
+            set(e.get("topic", "") for e in valid_events if e.get("topic"))
+        )
+        city_centers = {
+            city: (
+                sum(ev["lat"] for ev in evs) / len(evs),
+                sum(ev["lng"] for ev in evs) / len(evs),
             )
+            for city, evs in by_city.items()
+        }
+        city_facet_events = defaultdict(list)
+        for ev in valid_events:
+            city_facet_events[(ev["city"], ev.get("topic"))].append(ev)
+
+        def extract(text, qdate_str=None):
+            low = text.lower()
+            city = None
+            for c in all_cities:
+                if c.lower() in low:
+                    city = c
+                    break
+            cat = None
+            for cc in all_categories:
+                if cc.lower() in low:
+                    cat = cc
+                    break
+            facet = None
+            for topic in sorted(all_topics, key=len, reverse=True):
+                if topic and topic.lower() in low:
+                    facet = topic
+                    break
+            qdate = (
+                datetime.fromisoformat(qdate_str)
+                if qdate_str
+                else datetime(2026, 2, 15)
+            )
+            offset = 15
+            if "tomorrow" in low:
+                offset = 1
+            elif "weekend" in low:
+                offset = 3
+            elif "next week" in low:
+                offset = 10
+            elif "next month" in low:
+                offset = 45
+            est = qdate + timedelta(days=offset)
+            anchor = None
+            if city and facet:
+                cands = city_facet_events.get((city, facet), [])
+                if not cands:
+                    cands = [
+                        e for e in by_city.get(city, []) if e.get("topic") == facet
+                    ]
+                if cands:
+                    cands_sorted = sorted(
+                        cands,
+                        key=lambda ev: abs(
+                            (
+                                datetime.fromisoformat(ev["start_time"]) - est
+                            ).total_seconds()
+                        ),
+                    )
+                    anchor = cands_sorted[0]
+            if anchor:
+                ev_start = datetime.fromisoformat(anchor["start_time"])
+                ws = (ev_start - timedelta(days=30)).replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                )
+                we = (ev_start + timedelta(days=30)).replace(
+                    hour=23, minute=59, second=0, microsecond=0
+                )
+                lat = anchor["lat"]
+                lng = anchor["lng"]
+                radius = 50
+            else:
+                ws = datetime(2026, 1, 1, 0, 0, 0)
+                we = datetime(2026, 7, 1, 23, 59, 0)
+                if city and city in city_centers:
+                    lat, lng = city_centers[city]
+                    radius = 50
+                else:
+                    lat, lng = 0, 0
+                    radius = 500
+            return {
+                "city": city,
+                "category": cat,
+                "facet": facet,
+                "time_window_start": ws.isoformat(),
+                "time_window_end": we.isoformat(),
+                "lat": lat,
+                "lng": lng,
+                "radius_km": radius,
+            }
+
+        for q in queries:
+            if "city" in q and "facet" in q:
+                relevance[q["id"]] = compute_relevance(q, ev_map, by_city)
+            else:
+                ext = extract(q["text"], q.get("query_date"))
+                if ext["city"] and ext["facet"]:
+                    relevance[q["id"]] = compute_relevance(ext, ev_map, by_city)
+
+    return events, queries, relevance
+
+
+def trivial_baseline():
+    events, queries, relevance = load_ground_truth()
+    cutoff = datetime(2026, 2, 1)
+    valid_events = [
+        e
+        for e in events
+        if not e.get("is_spam") and datetime.fromisoformat(e["start_time"]) >= cutoff
+    ]
+    ev_map = {e["id"]: e for e in valid_events}
+    by_city = defaultdict(list)
+    for e in valid_events:
+        by_city[e["city"]].append(e)
 
     recalls = []
     for q in queries:
-        qid = q["id"]
+        qid = q.get("id")
         rel = relevance.get(qid, [])
-        if not rel:
+        if not rel or "city" not in q or "time_window_start" not in q:
             continue
         ws = datetime.fromisoformat(q["time_window_start"])
         we = datetime.fromisoformat(q["time_window_end"])
@@ -129,8 +285,7 @@ def trivial_baseline():
         radius = q["radius_km"]
         city = q["city"]
         cat = q.get("category")
-
-        cand = events_by_city.get(city, [])
+        cand = by_city.get(city, [])
         filtered = []
         for e in cand:
             if cat and e["category"] != cat:
@@ -141,7 +296,6 @@ def trivial_baseline():
             if haversine(q_lat, q_lng, e["lat"], e["lng"]) > radius:
                 continue
             filtered.append(e)
-
         cluster_best = {}
         singletons = []
         for e in filtered:
@@ -163,18 +317,36 @@ def trivial_baseline():
     return sum(recalls) / len(recalls) if recalls else 0.0
 
 
+def compute_improved_recall_from_output():
+    _, _, relevance = load_ground_truth()
+    rel_sets = {k: set(v) for k, v in relevance.items()}
+    retrieved = {}
+    if os.path.exists("/output/retrieved.jsonl"):
+        with open("/output/retrieved.jsonl") as f:
+            for line in f:
+                obj = json.loads(line)
+                retrieved[obj["query_id"]] = obj.get("retrieved_ids", [])
+    recalls = []
+    for qid, rel in rel_sets.items():
+        if not rel:
+            continue
+        ret = retrieved.get(qid, [])
+        if not ret:
+            recalls.append(0.0)
+            continue
+        recalls.append(len(set(ret[:10]) & rel) / len(rel))
+    return sum(recalls) / len(recalls) if recalls else 0.0
+
+
 def test_beats_trivial():
-    import os, json
-
-    with open("/output/eval_report.json") as f:
-        report = json.load(f)
-    improved = report.get("improved_recall_at_10") or report.get("recall_at_10") or 0.0
-
+    improved = compute_improved_recall_from_output()
     base = trivial_baseline()
     os.makedirs("/logs/verifier", exist_ok=True)
     with open("/logs/verifier/baseline_score.txt", "w") as bf:
         bf.write(f"agent={improved:.3f} baseline_popularity={base:.3f}\n")
-
+    # If trivial baseline couldn't compute (0.0), use 0.27 as reference from earlier analysis
+    if base == 0.0:
+        base = 0.27
     assert improved > base + 0.05, (
         f"Agent {improved:.3f} should beat trivial popularity baseline {base:.3f} by 0.05"
     )
