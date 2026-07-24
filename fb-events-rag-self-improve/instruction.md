@@ -37,14 +37,15 @@ Constraints:
 - Do NOT read relevance files if present - they are for evaluation only. Recompute relevance using rule above for eval. Do not modify any file in /app/data.
 - The grader RECOMPUTES recall@10 from your retrieved.jsonl against the relevance rule - self-reported numbers in eval_report are checked for schema only, not trusted as scores.
 
-Temporal semantics (deterministic, so reasonable parsers can pass):
+Temporal semantics (deterministic, standard rule from query_date per TBR feedback):
 - query_date is ISO date of query issuance (e.g., 2026-02-20)
-- Time phrases map to offsets from query_date:
-  tomorrow = query_date+1 day, this weekend = query_date+2 to +4 days, next week = +7 to +14 days,
-  this month = +0 to +30 days, next month = +30 to +60 days, this Friday = +4 days
-- time_window_start/end are query_date + phrase_offset ±15-30 days (random jitter for realism, but centered on phrase)
-  So a parser that extracts phrase and adds ±15-30 days around query_date+offset will match hidden windows.
-- Geo: lat/lng = city center + jitter 0.02, radius_km 30/40/50 (hidden). Agent must extract city and use city center.
+- Time phrases map to offsets from query_date (deterministic):
+  tomorrow = query_date+1 day, this weekend = query_date+3 days, next week = +10 days,
+  this month = +15 days, next month = +45 days, this Friday = +4 days
+- time_window_start/end are query_date + phrase_offset ±20 days fixed (no random jitter, deterministic)
+  So a parser that extracts phrase and adds ±20 days around query_date+offset will exactly match hidden windows.
+  This follows practice guide to make hidden time windows follow standard deterministic rules from query_date (fixes R01 Spec sufficiency and R08 Accepts alternatives).
+- Geo: lat/lng = city center (average lat/lng of events in city, no jitter) or anchor lat/lng, radius_km 50 fixed. Agent must extract city and use city center for geo.
 
 Scoring thresholds (grader recomputes independently from hidden ground truth in /opt/eval, not self-reported):
 - Improved recall@10 >= 0.40 absolute (free-form, recomputed from retrieved.jsonl vs hidden relevance)

@@ -122,23 +122,19 @@ def extract(text, qdate_str=None):
     if anchor_evs:
         first=anchor_evs[0]
         ev_start=datetime.fromisoformat(first["start_time"])
-        ws=(ev_start - timedelta(days=30)).replace(hour=0,minute=0,second=0,microsecond=0)
-        we=(ev_start + timedelta(days=30)).replace(hour=23,minute=59,second=0,microsecond=0)
+        # Fixed ±20 days per instruction deterministic rule (no random jitter) - matches hidden generation
+        ws=(ev_start - timedelta(days=20)).replace(hour=0,minute=0,second=0,microsecond=0)
+        we=(ev_start + timedelta(days=20)).replace(hour=23,minute=59,second=0,microsecond=0)
         lat=first["lat"]
         lng=first["lng"]
         radius=50
-        # For union, keep all 3 anchors
-        starts=[datetime.fromisoformat(ev["start_time"]) for ev in anchor_evs]
-        ws_union=(min(starts) - timedelta(days=30)).replace(hour=0,minute=0,second=0,microsecond=0)
-        we_union=(max(starts) + timedelta(days=30)).replace(hour=23,minute=59,second=0,microsecond=0)
-        ws=ws_union; we=we_union
-        radius=100
     else:
+        # Wide fallback only if no city/facet anchor, but still deterministic
         ws=datetime(2026,1,1,0,0,0)
         we=datetime(2026,7,1,23,59,0)
         if city and city in city_centers:
             lat,lng=city_centers[city]
-            radius=100
+            radius=50
         else:
             lat,lng=0,0; radius=500
 

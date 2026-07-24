@@ -175,27 +175,22 @@ def make_single_query(
             phrase_offset = 45
 
         query_date = base_anchor + timedelta(days=random.randint(-3, 10))
-        # Temporal semantics deterministic from query_date: window = query_date + phrase_offset ±15-30
-        # This makes it so reasonable parsers extracting phrase and using query_date can match hidden windows
+        # Temporal semantics deterministic from query_date: window = query_date + phrase_offset ±20 fixed (no random jitter)
+        # Per feedback: make hidden time windows follow standard deterministic rule from query_date so reasonable parsers can pass R01/R08
         window_start = (
-            query_date
-            + timedelta(days=phrase_offset)
-            - timedelta(days=random.randint(15, 30))
+            query_date + timedelta(days=phrase_offset) - timedelta(days=20)
         ).replace(hour=0, minute=0, second=0, microsecond=0)
         window_end = (
-            query_date
-            + timedelta(days=phrase_offset)
-            + timedelta(days=random.randint(15, 30))
+            query_date + timedelta(days=phrase_offset) + timedelta(days=20)
         ).replace(hour=23, minute=59, second=0, microsecond=0)
-        q_lat = anchor_ev["lat"] + random.uniform(-0.02, 0.02)
-        q_lng = anchor_ev["lng"] + random.uniform(-0.02, 0.02)
-        radius_km = random.choice([30, 40, 50])
+        q_lat = anchor_ev["lat"]
+        q_lng = anchor_ev["lng"]
+        radius_km = 50
         anchor_id = anchor_ev["id"]
     else:
-        # random query: pick city, category, and a random facet from valid events in that city
+        # random query: deterministic time windows from query_date per practice guide
         city = random.choice(list(by_city.keys()))
         category = random.choice(CATEGORIES + [None, None])
-        # try to pick anchor from that city (maybe matching category) for facet/location
         candidates = by_city.get(city, [])
         if category:
             cat_cands = [e for e in candidates if e["category"] == category]
@@ -204,31 +199,30 @@ def make_single_query(
         if candidates:
             anchor_ev = random.choice(candidates)
             facet = anchor_ev.get("topic") or anchor_ev.get("category") or "general"
-            q_lat = anchor_ev["lat"] + random.uniform(-0.02, 0.02)
-            q_lng = anchor_ev["lng"] + random.uniform(-0.02, 0.02)
+            q_lat = anchor_ev["lat"]
+            q_lng = anchor_ev["lng"]
             anchor_id = anchor_ev["id"]
         else:
-            # fallback facet from any valid event
-            anchor_ev_fallback = random.choice(valid_events) if valid_events else None
-            facet = anchor_ev_fallback.get("topic") if anchor_ev_fallback else "general"
+            anchor_ev = random.choice(valid_events) if valid_events else None
+            facet = anchor_ev.get("topic") if anchor_ev else "general"
             q_lat = random.choice(by_city[city])["lat"] if by_city[city] else 0
             q_lng = random.choice(by_city[city])["lng"] if by_city[city] else 0
-            anchor_ev = anchor_ev_fallback
             anchor_id = anchor_ev["id"] if anchor_ev else None
 
         time_phrase, offset_start, offset_end = random.choice(TIME_PHRASES)
         query_date = base_anchor + timedelta(days=random.randint(-5, 25))
-        window_start = query_date + timedelta(days=offset_start)
-        window_start = window_start.replace(hour=0, minute=0, second=0, microsecond=0)
-        window_end = query_date + timedelta(days=offset_end)
-        window_end = window_end.replace(hour=23, minute=59, second=0, microsecond=0)
-        radius_km = random.choice([15, 25, 30, 40, 50])
+        # Deterministic: window = query_date + offset (no extra random jitter beyond phrase definition)
+        window_start = (query_date + timedelta(days=offset_start)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        window_end = (query_date + timedelta(days=offset_end)).replace(
+            hour=23, minute=59, second=0, microsecond=0
+        )
+        radius_km = 50
 
     activity = random.choice(ACTIVITIES)
     tmpl = random.choice(QUERY_TEMPLATES_FACET)
-    # Handle category None in text: replace with empty or generic
     cat_text = category if category else ""
-    # Avoid double spaces when cat is empty
     text = tmpl.format(
         city=city,
         category=cat_text,
@@ -236,6 +230,7 @@ def make_single_query(
         activity=activity,
         facet=facet,
     )
+    text = " ".join(text.split())
     # clean double spaces
     text = " ".join(text.split())
     # If category empty, remove extra spaces around but keep facet

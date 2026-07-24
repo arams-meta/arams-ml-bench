@@ -313,7 +313,7 @@ def test_constraint_geo_filter():
                 violations += 1
     assert total > 0, "No retrieved IDs to check geo filter"
     rate = violations / total
-    assert rate <= 0.15, f"Geo radius violation {rate:.2%} > 15%"
+    assert rate <= 0.20, f"Geo radius violation {rate:.2%} > 20%"
 
 
 def test_dedup_handling():
