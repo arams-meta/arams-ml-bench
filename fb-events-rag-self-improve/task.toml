@@ -4,7 +4,7 @@ version = "1.0"
 name = "arams/fb-events-rag-self-improve"
 description = "Self-improving RAG with auto-eval loop for Facebook Events inventory"
 authors = [{ name = "Aram", email = "arams@meta.com" }]
-keywords = ["llm", "rag", "retrieval", "self-improvement", "evaluation", "events"]
+keywords = ["ml", "llm", "rag", "retrieval", "self-improvement", "evaluation", "events"]
 format = "ml_bench_single_turn"
 workstream = "llm_research"
 
@@ -20,8 +20,9 @@ seed = 42
 deterministic = true
 timeout = 1800
 memory_limit = "8GB"
-tags = ["llm", "rag", "self-improvement", "cpu-native"]
+tags = ["ml", "llm", "rag", "self-improvement", "cpu-native"]
 
 [environment]
 python_version = "3.10"
+allow_internet = true
 requirements = ["sentence-transformers==2.2.2", "faiss-cpu==1.7.4", "numpy==1.24.3", "scikit-learn==1.3.0", "pandas==2.0.3"]
