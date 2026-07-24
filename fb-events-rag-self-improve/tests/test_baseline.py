@@ -103,6 +103,13 @@ def compute_relevance(q, ev_map, by_city):
 
 
 def load_ground_truth():
+    # Guard hidden ground truth must be readable - otherwise fallback is weak heuristic same as oracle
+    assert os.path.exists("/opt/eval/events.jsonl"), (
+        "Hidden /opt/eval/events.jsonl not readable - would fallback to weak heuristic"
+    )
+    assert os.path.exists("/opt/eval/queries.jsonl"), (
+        "Hidden /opt/eval/queries.jsonl not readable - weak fallback"
+    )
     events_paths = [
         "/opt/eval/events.jsonl",
         "/app/data/events.jsonl",
@@ -122,9 +129,16 @@ def load_ground_truth():
 
     events_file = first_existing(events_paths) or "/app/data/events.jsonl"
     queries_file = first_existing(queries_paths) or "/app/data/queries.jsonl"
+    assert "/opt/eval" in events_file, f"Did not load hidden events: {events_file}"
+    assert "/opt/eval" in queries_file, f"Did not load hidden queries: {queries_file}"
 
     events = [json.loads(l) for l in open(events_file)]
     queries = [json.loads(l) for l in open(queries_file)]
+    # Guard structured fields - free-form has only id+text+query_date, hidden has city/facet/time
+    sq = queries[0] if queries else {}
+    assert "city" in sq and "facet" in sq and "time_window_start" in sq, (
+        f"Loaded queries missing structured fields: {list(sq.keys())} - would use weak extract heuristic same as oracle, need hidden /opt/eval"
+    )
 
     relevance = {}
     for rp in rel_paths:
@@ -256,6 +270,11 @@ def load_ground_truth():
                 ext = extract(q["text"], q.get("query_date"))
                 if ext["city"] and ext["facet"]:
                     relevance[q["id"]] = compute_relevance(ext, ev_map, by_city)
+
+    # Final guard: relevance must be non-empty and from structured hidden queries, not weak free-form fallback
+    assert len(relevance) >= 100 and sum(len(v) for v in relevance.values()) > 0, (
+        "Relevance empty - hidden ground truth unreadable, would be weak heuristic same as oracle"
+    )
 
     return events, queries, relevance
 

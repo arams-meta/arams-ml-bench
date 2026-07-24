@@ -19,6 +19,13 @@ def load_jsonl(path):
 
 def load_ground_truth():
     """Load events/queries/relevance from hidden /opt/eval first to avoid agent tampering of /app/data"""
+    # Guard: hidden ground truth must be readable (test.sh chmod 755 /opt/eval); otherwise fallback would be weak heuristic same as oracle
+    assert os.path.exists("/opt/eval/events.jsonl"), (
+        "Hidden /opt/eval/events.jsonl not readable - cannot verify, would fallback to weak free-form heuristic"
+    )
+    assert os.path.exists("/opt/eval/queries.jsonl"), (
+        "Hidden /opt/eval/queries.jsonl not readable - cannot verify, would fallback to weak heuristic"
+    )
     events_paths = ["/opt/eval/events.jsonl", "/app/data/events.jsonl"]
     queries_paths = ["/opt/eval/queries.jsonl", "/app/data/queries.jsonl"]
     relevance_paths = [
@@ -31,9 +38,19 @@ def load_ground_truth():
     queries_file = next(
         (p for p in queries_paths if os.path.exists(p)), queries_paths[-1]
     )
+    # Ensure we actually loaded hidden version, not fallback
+    assert "/opt/eval" in events_file, f"Did not load hidden events: got {events_file}"
+    assert "/opt/eval" in queries_file, (
+        f"Did not load hidden queries: got {queries_file}"
+    )
 
     events = {e["id"]: e for e in load_jsonl(events_file)}
     queries = {q["id"]: q for q in load_jsonl(queries_file)}
+    # Hidden queries must have structured fields (city, time_window, etc) - free-form agent queries do not
+    sample_q = next(iter(queries.values())) if queries else {}
+    assert "city" in sample_q and "time_window_start" in sample_q, (
+        f"Loaded queries missing structured fields city/time_window_start: got {list(sample_q.keys())} - weak fallback, need hidden /opt/eval"
+    )
 
     relevance = {}
     for rp in relevance_paths:
@@ -108,6 +125,11 @@ def load_ground_truth():
                     continue
                 rel.append(ev["id"])
             relevance[qid] = dedup_ids(rel, ev_map)
+
+    # Guard relevance non-empty and from hidden structured queries
+    assert len(relevance) >= 100 and sum(len(v) for v in relevance.values()) > 0, (
+        "Relevance recomputed empty - hidden ground truth unreadable, weak fallback would be same heuristic as oracle"
+    )
 
     return events, queries, relevance
 
@@ -220,7 +242,21 @@ def compute_improved_recall_from_output(events, queries, relevance):
 def test_self_improvement_lift():
     """Directional: improved recall must beat baseline by margin - recomputed independently"""
     events, queries, relevance = load_ground_truth()
+    # Guard: ensure hidden ground truth was used, not weak free-form fallback (fixes Test Quality Other Quality Issues)
+    assert os.path.exists("/opt/eval/queries.jsonl"), (
+        "Hidden ground truth /opt/eval/queries.jsonl not readable - cannot verify recall, fallback would be weak heuristic"
+    )
+    # Hidden queries must have structured city field, free-form agent queries do not
+    assert any("city" in q for q in queries.values()), (
+        "Queries missing city field - fallback to free-form extraction used, weak labels; need hidden structured ground truth"
+    )
+    assert len(relevance) >= 100 and sum(len(v) for v in relevance.values()) > 0, (
+        "Relevance empty - ground truth unreadable, cannot establish lift floor"
+    )
     baseline_recall = compute_baseline_recall(events, queries, relevance)
+    assert baseline_recall > 0.0, (
+        "Baseline recomputed as 0.0 - ground truth unreadable or relevance empty"
+    )
     improved_recall, _ = compute_improved_recall_from_output(events, queries, relevance)
     assert improved_recall > baseline_recall + 0.08, (
         f"Expected lift (recomputed): improved {improved_recall:.3f} > baseline {baseline_recall:.3f} + 0.08"
@@ -229,6 +265,14 @@ def test_self_improvement_lift():
 
 def test_recall_absolute_threshold():
     events, queries, relevance = load_ground_truth()
+    # Guard hidden ground truth (same as lift test)
+    assert os.path.exists("/opt/eval/queries.jsonl"), (
+        "Hidden ground truth /opt/eval/queries.jsonl not readable - fallback weak"
+    )
+    assert any("city" in q for q in queries.values()), (
+        "Queries missing city field - weak fallback"
+    )
+    assert len(relevance) >= 100, "Relevance empty"
     improved_recall, _ = compute_improved_recall_from_output(events, queries, relevance)
     assert improved_recall >= 0.40, (
         f"Improved recall@10 recomputed {improved_recall:.3f} below absolute threshold 0.40 (free-form, lowered per TBR justification)"

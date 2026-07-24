@@ -77,7 +77,16 @@ def compute_relevance_for_query(q, valid_events, ev_map, by_city):
 
 
 def load_ground_truth():
-    # Hidden ground truth first
+    # Hidden ground truth first - guard against weak free-form fallback (fixes Test Quality Other Quality Issues)
+    assert os.path.exists("/opt/eval/events.jsonl"), (
+        "Hidden /opt/eval/events.jsonl not readable - fallback would be weak"
+    )
+    assert os.path.exists("/opt/eval/queries.jsonl"), (
+        "Hidden /opt/eval/queries.jsonl not readable - fallback weak"
+    )
+    assert os.path.exists("/opt/eval/holdout_queries.jsonl"), (
+        "Hidden /opt/eval/holdout_queries.jsonl not readable - fallback weak"
+    )
     events_paths = ["/opt/eval/events.jsonl", "/app/data/events.jsonl"]
     queries_paths = ["/opt/eval/queries.jsonl", "/app/data/queries.jsonl"]
     h_queries_paths = [
@@ -101,6 +110,16 @@ def load_ground_truth():
     h_queries_file = first_existing(h_queries_paths)
     rel_file = first_existing(relevance_paths)
     h_rel_file = first_existing(h_relevance_paths)
+    # Ensure hidden version loaded
+    assert events_file and "/opt/eval" in events_file, (
+        f"Did not load hidden events: {events_file}"
+    )
+    assert queries_file and "/opt/eval" in queries_file, (
+        f"Did not load hidden queries: {queries_file}"
+    )
+    assert h_queries_file and "/opt/eval" in h_queries_file, (
+        f"Did not load hidden holdout: {h_queries_file}"
+    )
 
     events = {}
     queries = {}
@@ -112,8 +131,17 @@ def load_ground_truth():
         events = {e["id"]: e for e in load_jsonl(events_file)}
     if queries_file:
         queries = {q["id"]: q for q in load_jsonl(queries_file)}
+        # Guard structured fields - free-form has only id+text+query_date
+        sq = next(iter(queries.values())) if queries else {}
+        assert "city" in sq and "time_window_start" in sq, (
+            f"Train queries missing structured city/time: {list(sq.keys())} - weak fallback"
+        )
     if h_queries_file:
         h_queries = {q["id"]: q for q in load_jsonl(h_queries_file)}
+        sq = next(iter(h_queries.values())) if h_queries else {}
+        assert "city" in sq and "time_window_start" in sq, (
+            f"Holdout queries missing structured fields: {list(sq.keys())} - weak fallback"
+        )
     if rel_file:
         relevance = {
             r["query_id"]: set(r["relevant_event_ids"]) for r in load_jsonl(rel_file)
@@ -156,11 +184,34 @@ def load_ground_truth():
                 compute_relevance_for_query(q, valid, ev_map, by_city)
             )
 
+    # Final guards: ensure relevance not empty and not from weak heuristic
+    assert len(relevance) >= 100 and sum(len(v) for v in relevance.values()) > 0, (
+        "Train relevance empty - hidden ground truth unreadable, weak fallback would match oracle heuristic"
+    )
+    assert len(h_relevance) >= 20 and sum(len(v) for v in h_relevance.values()) > 0, (
+        "Holdout relevance empty - hidden ground truth unreadable"
+    )
+
     return events, queries, h_queries, relevance, h_relevance
 
 
 def test_holdout_generalization():
     events, queries, h_queries, relevance, h_relevance = load_ground_truth()
+
+    # Guard hidden ground truth (fixes Test Quality Other Quality Issues - same as baseline)
+    assert os.path.exists("/opt/eval/holdout_queries.jsonl"), (
+        "Hidden holdout ground truth /opt/eval/holdout_queries.jsonl not readable - fallback would be weak heuristic"
+    )
+    assert os.path.exists("/opt/eval/queries.jsonl"), (
+        "Hidden ground truth /opt/eval/queries.jsonl not readable"
+    )
+    assert any("city" in q for q in h_queries.values()), (
+        "Holdout queries missing city field - weak free-form fallback used"
+    )
+    assert len(h_relevance) >= 20 and sum(len(v) for v in h_relevance.values()) > 0, (
+        "Holdout relevance empty - ground truth unreadable"
+    )
+    assert len(relevance) >= 100, "Train relevance empty"
 
     # Load retrieved outputs
     retrieved = {}
@@ -176,7 +227,7 @@ def test_holdout_generalization():
                 obj = json.loads(line)
                 h_retrieved[obj["query_id"]] = obj.get("retrieved_ids", [])
 
-    # If no holdout retrieved, skip
+    # If no holdout retrieved, skip - but ground truth must still be valid (guarded above)
     if not h_retrieved and not h_relevance:
         return
 
