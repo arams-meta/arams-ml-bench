@@ -4,3 +4,11 @@ __pycache__/
 *.pkl
 *.pyo
 .review/
+# fb-events task artifacts - must not be committed (label leakage)
+fb-events-rag-self-improve/data/*_full_hidden.jsonl
+fb-events-rag-self-improve/data/*_hidden.jsonl
+fb-events-rag-self-improve/data/relevance*.jsonl
+fb-events-rag-self-improve/data/holdout_relevance*.jsonl
+fb-events-rag-self-improve/_output/
+fb-events-rag-self-improve/environment/references/__pycache__/
+jobs/

@@ -1,1 +1,0 @@
-agent=0.804 baseline_popularity=0.277
