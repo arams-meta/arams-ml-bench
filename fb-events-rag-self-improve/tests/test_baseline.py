@@ -371,6 +371,6 @@ def test_beats_trivial():
         "Trivial popularity baseline recomputed as 0.0 - ground truth unreadable "
         "or relevance empty; cannot establish a lift floor"
     )
-    assert improved > base + 0.05, (
-        f"Agent {improved:.3f} should beat trivial popularity baseline {base:.3f} by 0.05"
+    assert improved > base + 0.08, (
+        f"Agent {improved:.3f} should beat trivial popularity baseline {base:.3f} by 0.08 - strictest gate per instruction"
     )

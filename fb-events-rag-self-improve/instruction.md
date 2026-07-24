@@ -49,15 +49,15 @@ Temporal semantics (deterministic, standard rule from query_date per TBR feedbac
 
 Scoring thresholds (grader recomputes independently from hidden ground truth in /opt/eval, not self-reported):
 - Improved recall@10 >= 0.40 absolute (free-form, recomputed from retrieved.jsonl vs hidden relevance)
-- Lift: improved > baseline + 0.08 where baseline is trivial popularity-only filtered by city/category/time/geo/dedup and recomputed (baseline ignores facet, so ~0.25-0.30)
-- Baseline floor: trivial pop-only has ~0.25-0.30 recall because it ignores facet, improved must beat by >0.05 (recomputed from retrieved)
+- Lift: improved > baseline + 0.08 where baseline is trivial popularity-only filtered by city/category/time/geo/dedup and recomputed (baseline ignores facet, so ~0.25-0.30). Strictest gate is 0.08.
+- Baseline floor: trivial pop-only has ~0.25-0.30 recall because it ignores facet, improved must beat baseline by >0.08 (recomputed from retrieved) - same as lift gate
 - Holdout: holdout recall >=0.25 and holdout/train ratio >=0.4 (free-form, recomputed)
 - Time/geo/dedup/spam constraints: time violation <=40%, geo <=20%, dup_rate <=30%, spam <=5%
 - Free-form extraction accuracy (parsed_filters.jsonl vs hidden /opt/eval):
   city >=0.60, category >=0.40, facet >=0.50, time_window present, radius/lat/lng present
 - Embedding usage: rag_config must contain embedding_model all-MiniLM-L6-v2 and embedding_used true, plus steps describing filter-first, semantic, facet
   Behavioral proof: retrieved events must have facet-match rate >=60% (retrieved event topic == query facet). Baseline pop-only ignores facet and gets ~8% facet-match (30 topics random), so 60% proves facet-aware semantic filtering via embeddings. Baked artifacts /app/data/minilm + corpus_emb.npy must exist (offline model, no API).
-- Self-improvement loop: rag_config self_improvement true + steps covering filter/rewrite/rerank, eval_report lift>0.05, parsed_filters_count 500, retrieved_count 500
-- Isolation: hidden ground truth in /opt/eval chmod 700 root:root is NOT agent-readable; agent-visible queries are free-form only id+text+query_date. Solver must run as non-root agentuser (enforced via Dockerfile USER agentuser and solve.sh root check) - no sudo granted to agent to bypass. Do NOT attempt to read /opt/eval.
+- Self-improvement loop: rag_config self_improvement true + steps covering filter/rewrite/rerank, eval_report lift>0.08 (same as lift gate), parsed_filters_count 500, retrieved_count 500
+- Isolation: hidden ground truth in /opt/eval is generated at test time (not present at solve time for defense-in-depth) and chmod 700 root:root is NOT agent-readable; agent-visible queries are free-form only id+text+query_date. Solver must run as non-root agentuser (enforced via Dockerfile USER agentuser and solve.sh root check) - no sudo granted to agent to bypass. Do NOT attempt to read /opt/eval.
 
 Self-improvement loop should analyze low-recall queries and retry techniques like query rewriting, re-ranking, or different filter combinations to achieve the highest recall@10 and largest delta over baseline. You need to figure out how to use the semantic facet and other signals to beat the baseline.

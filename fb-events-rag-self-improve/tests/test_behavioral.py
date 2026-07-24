@@ -399,8 +399,8 @@ def test_self_improvement_loop_proven():
         sum(improved_recalls) / len(improved_recalls) if improved_recalls else 0.0
     )
     lift = improved_recall - baseline_recall
-    assert lift > 0.05, (
-        f"Recomputed self-improvement lift {lift:.3f} too low (<0.05): improved {improved_recall:.3f} baseline {baseline_recall:.3f}"
+    assert lift > 0.08, (
+        f"Recomputed self-improvement lift {lift:.3f} too low (<0.08 strictest gate): improved {improved_recall:.3f} baseline {baseline_recall:.3f}"
     )
     with open("/output/retrieved.jsonl") as f:
         retrieved_count = sum(1 for _ in f)
@@ -501,3 +501,44 @@ def test_holdout_structured_hidden():
     assert len(present) == 0, (
         f"Holdout agent-visible queries should be free-form only, but contain {present}"
     )
+
+
+def test_app_data_not_modified():
+    """Direction B: instruction says Do not modify any file in /app/data - check integrity"""
+    import os
+
+    # Events must exist and have 20000 lines (generated at build)
+    events_path = "/app/data/events.jsonl"
+    assert os.path.exists(events_path), (
+        "events.jsonl missing - agent may have deleted /app/data"
+    )
+    with open(events_path) as f:
+        event_lines = sum(1 for _ in f)
+    assert event_lines == 20000, (
+        f"events.jsonl should have 20000 lines, got {event_lines} - do not modify /app/data"
+    )
+
+    # Queries must have 500 lines, free-form only
+    queries_path = "/app/data/queries.jsonl"
+    assert os.path.exists(queries_path), "queries.jsonl missing"
+    with open(queries_path) as f:
+        q_lines = [json.loads(line) for line in f]
+    assert len(q_lines) == 500, f"queries.jsonl should have 500, got {len(q_lines)}"
+    # Must still be free-form only (no structured city leak)
+    assert "city" not in q_lines[0], (
+        "queries.jsonl modified to include city - do not modify /app/data"
+    )
+
+    # Holdout 100
+    h_path = "/app/data/holdout_queries.jsonl"
+    assert os.path.exists(h_path), "holdout_queries.jsonl missing"
+    with open(h_path) as f:
+        h_lines = sum(1 for _ in f)
+    assert h_lines == 100, f"holdout_queries.jsonl should have 100, got {h_lines}"
+
+    # Baked model must still exist
+    assert os.path.exists("/app/data/minilm") or os.path.exists(
+        "/app/data/minilm/config.json"
+    ), "minilm model missing - do not modify /app/data"
+    assert os.path.exists("/app/data/corpus_emb.npy"), "corpus_emb.npy missing"
+    assert os.path.exists("/app/data/corpus_ids.json"), "corpus_ids.json missing"
