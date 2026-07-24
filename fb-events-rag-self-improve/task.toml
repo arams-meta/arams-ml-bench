@@ -20,7 +20,7 @@ seed = 42
 deterministic = true
 timeout = 1800
 memory_limit = "8GB"
-tags = ["ml", "llm", "rag", "self-improvement", "cpu-native"]
+tags = ["ml", "ml-bench", "llm-research", "llm", "rag", "self-improvement", "cpu-native"]
 
 [environment]
 python_version = "3.10"
