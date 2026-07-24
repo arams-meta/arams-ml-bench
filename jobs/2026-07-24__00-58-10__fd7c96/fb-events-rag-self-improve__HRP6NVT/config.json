@@ -1,0 +1,63 @@
+{
+    "task": {
+        "path": "fb-events-rag-self-improve",
+        "git_url": null,
+        "git_commit_id": null,
+        "name": null,
+        "ref": null,
+        "overwrite": false,
+        "download_dir": null,
+        "source": null
+    },
+    "trial_name": "fb-events-rag-self-improve__HRP6NVT",
+    "trials_dir": "/home/arams/ml-bench-template/jobs/2026-07-24__00-58-10__fd7c96",
+    "timeout_multiplier": 3.0,
+    "agent_timeout_multiplier": null,
+    "verifier_timeout_multiplier": null,
+    "agent_setup_timeout_multiplier": null,
+    "environment_build_timeout_multiplier": null,
+    "agent": {
+        "name": "oracle",
+        "import_path": null,
+        "model_name": "oracle",
+        "skills": [],
+        "skills_remove": [],
+        "override_timeout_sec": null,
+        "override_setup_timeout_sec": null,
+        "max_timeout_sec": null,
+        "kwargs": {},
+        "env": {},
+        "mcp_servers": []
+    },
+    "environment": {
+        "type": "docker",
+        "import_path": null,
+        "force_build": false,
+        "delete": true,
+        "override_cpus": null,
+        "override_memory_mb": null,
+        "override_storage_mb": null,
+        "override_gpus": null,
+        "suppress_override_warnings": false,
+        "mounts": null,
+        "toolshed": null,
+        "toolshed_tools": null,
+        "extra_docker_compose": [],
+        "env": {},
+        "kwargs": {}
+    },
+    "verifier": {
+        "override_timeout_sec": null,
+        "max_timeout_sec": null,
+        "env": {},
+        "disable": false
+    },
+    "artifacts": [],
+    "extra_instruction_paths": [],
+    "start_step": 1,
+    "run_only_step": null,
+    "seed_ref": null,
+    "seed_fidelity": "snapshot",
+    "job_id": "8ab6070c-947f-44b5-89f4-5cf557fc7be9",
+    "capture_snapshot": true
+}

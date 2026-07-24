@@ -1,0 +1,94 @@
+============================= test session starts ==============================
+platform linux -- Python 3.10.12, pytest-7.4.0, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+metadata: {'Python': '3.10.12', 'Platform': 'Linux-6.16.1-0_fbk2_0_gf40efc324cc8-x86_64-with-glibc2.31', 'Packages': {'pytest': '7.4.0', 'pluggy': '1.6.0'}, 'Plugins': {'json-report': '1.5.0', 'metadata': '3.1.1'}}
+rootdir: /tests
+plugins: json-report-1.5.0, metadata-3.1.1
+collecting ... collected 3 items
+
+../tests/test_smoke.py::test_output_exists PASSED                        [ 33%]
+../tests/test_smoke.py::test_output_loadable PASSED                      [ 66%]
+../tests/test_smoke.py::test_data_baked PASSED                           [100%]
+
+============================== 3 passed in 0.01s ===============================
+============================= test session starts ==============================
+platform linux -- Python 3.10.12, pytest-7.4.0, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+metadata: {'Python': '3.10.12', 'Platform': 'Linux-6.16.1-0_fbk2_0_gf40efc324cc8-x86_64-with-glibc2.31', 'Packages': {'pytest': '7.4.0', 'pluggy': '1.6.0'}, 'Plugins': {'json-report': '1.5.0', 'metadata': '3.1.1'}}
+rootdir: /tests
+plugins: json-report-1.5.0, metadata-3.1.1
+collecting ... collected 3 items
+
+../tests/test_schema.py::test_events_schema PASSED                       [ 33%]
+../tests/test_schema.py::test_queries_schema PASSED                      [ 66%]
+../tests/test_schema.py::test_output_schema PASSED                       [100%]
+
+============================== 3 passed in 0.01s ===============================
+============================= test session starts ==============================
+platform linux -- Python 3.10.12, pytest-7.4.0, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+metadata: {'Python': '3.10.12', 'Platform': 'Linux-6.16.1-0_fbk2_0_gf40efc324cc8-x86_64-with-glibc2.31', 'Packages': {'pytest': '7.4.0', 'pluggy': '1.6.0'}, 'Plugins': {'json-report': '1.5.0', 'metadata': '3.1.1'}}
+rootdir: /tests
+plugins: json-report-1.5.0, metadata-3.1.1
+collecting ... collected 1 item
+
+../tests/test_baseline.py::test_beats_trivial PASSED                     [100%]
+
+============================== 1 passed in 0.84s ===============================
+============================= test session starts ==============================
+platform linux -- Python 3.10.12, pytest-7.4.0, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+metadata: {'Python': '3.10.12', 'Platform': 'Linux-6.16.1-0_fbk2_0_gf40efc324cc8-x86_64-with-glibc2.31', 'Packages': {'pytest': '7.4.0', 'pluggy': '1.6.0'}, 'Plugins': {'json-report': '1.5.0', 'metadata': '3.1.1'}}
+rootdir: /tests
+plugins: json-report-1.5.0, metadata-3.1.1
+collecting ... collected 9 items
+
+../tests/test_main.py::test_self_improvement_lift PASSED                 [ 11%]
+../tests/test_main.py::test_recall_absolute_threshold PASSED             [ 22%]
+../tests/test_main.py::test_self_improvement_loop_executed PASSED        [ 33%]
+../tests/test_main.py::test_constraint_time_filter PASSED                [ 44%]
+../tests/test_main.py::test_constraint_geo_filter PASSED                 [ 55%]
+../tests/test_main.py::test_dedup_handling PASSED                        [ 66%]
+../tests/test_main.py::test_eval_system_exists PASSED                    [ 77%]
+../tests/test_main.py::test_no_spam_retrieved PASSED                     [ 88%]
+../tests/test_main.py::test_reference_toy PASSED                         [100%]
+
+--------------------------------- JSON report ----------------------------------
+report saved to: /logs/verifier/ctrf.json
+============================== 9 passed in 3.75s ===============================
+============================= test session starts ==============================
+platform linux -- Python 3.10.12, pytest-7.4.0, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+metadata: {'Python': '3.10.12', 'Platform': 'Linux-6.16.1-0_fbk2_0_gf40efc324cc8-x86_64-with-glibc2.31', 'Packages': {'pytest': '7.4.0', 'pluggy': '1.6.0'}, 'Plugins': {'json-report': '1.5.0', 'metadata': '3.1.1'}}
+rootdir: /tests
+plugins: json-report-1.5.0, metadata-3.1.1
+collecting ... collected 7 items
+
+../tests/test_behavioral.py::test_parsed_filters_exists_and_valid PASSED [ 14%]
+../tests/test_behavioral.py::test_embedding_usage_proven PASSED          [ 28%]
+../tests/test_behavioral.py::test_self_improvement_loop_proven PASSED    [ 42%]
+../tests/test_behavioral.py::test_agent_queries_free_form_only PASSED    [ 57%]
+../tests/test_behavioral.py::test_no_relevance_file_anywhere PASSED      [ 71%]
+../tests/test_behavioral.py::test_opt_eval_unavailable_from_agent PASSED [ 85%]
+../tests/test_behavioral.py::test_holdout_structured_hidden PASSED       [100%]
+
+============================== 7 passed in 0.27s ===============================
+============================= test session starts ==============================
+platform linux -- Python 3.10.12, pytest-7.4.0, pluggy-1.6.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+metadata: {'Python': '3.10.12', 'Platform': 'Linux-6.16.1-0_fbk2_0_gf40efc324cc8-x86_64-with-glibc2.31', 'Packages': {'pytest': '7.4.0', 'pluggy': '1.6.0'}, 'Plugins': {'json-report': '1.5.0', 'metadata': '3.1.1'}}
+rootdir: /tests
+plugins: json-report-1.5.0, metadata-3.1.1
+collecting ... collected 1 item
+
+../tests/test_holdout.py::test_holdout_generalization FAILED             [100%]
+
+=================================== FAILURES ===================================
+_________________________ test_holdout_generalization __________________________
+/tests/test_holdout.py:224: in test_holdout_generalization
+    assert ratio >= 0.6, (
+E   AssertionError: Holdout degraded too much: holdout 0.372 / train 0.804 = 0.463 < 0.6
+E   assert 0.4626705491699589 >= 0.6
+=========================== short test summary info ============================
+FAILED ../tests/test_holdout.py::test_holdout_generalization - AssertionError...
+============================== 1 failed in 0.34s ===============================
