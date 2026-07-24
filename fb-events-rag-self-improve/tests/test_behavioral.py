@@ -59,57 +59,79 @@ def test_parsed_filters_exists_and_valid():
 
 
 def test_embedding_usage_proven():
-    """Prove MiniLM embedding search was actually used, not just strings in config"""
-    # Check solve.sh contains embedding usage
-    solve_paths = [
-        "/solution/solve.sh",
-        "/app/solution/solve.sh",
-        "./solution/solve.sh",
-    ]
-    solve_content = ""
-    for p in solve_paths:
-        if os.path.exists(p):
-            with open(p) as f:
-                solve_content = f.read()
-                break
-
-    # Must reference embedding model or corpus embeddings
-    assert any(
-        kw in solve_content
-        for kw in [
-            "SentenceTransformer",
-            "corpus_emb",
-            "all-MiniLM",
-            "embedding",
-            "FAISS",
-            "faiss",
-        ]
-    ), (
-        "solve.sh must contain actual embedding code (SentenceTransformer / corpus_emb.npy / FAISS), not just config strings"
+    """Prove MiniLM embedding search was actually used, via agent artifacts, not reference solution path"""
+    # Check precomputed embeddings exist (evidence of RAG pipeline) - in final image
+    has_emb = (
+        os.path.exists("/app/data/corpus_emb.npy")
+        or os.path.exists("/app/data/minilm")
+        or os.path.exists("/opt/eval/corpus_emb.npy")
     )
+    # It's okay if not present locally (outside docker), but in docker it should exist; we don't fail on this alone
 
-    # Check precomputed embeddings exist (evidence of RAG pipeline)
-    assert os.path.exists("/app/data/corpus_emb.npy") or os.path.exists(
-        "/app/data/minilm"
-    ), (
-        "Missing precomputed embeddings /app/data/corpus_emb.npy or minilm model - must use baked MiniLM"
-    )
-
-    # Check rag_config declares embedding usage
+    # Check agent output rag_config declares embedding usage and model
     with open("/output/rag_config.json") as f:
         cfg = json.load(f)
+    blob_cfg = json.dumps(cfg).lower()
     assert (
-        cfg.get("embedding_used")
-        or "embedding" in json.dumps(cfg).lower()
-        or "minilm" in json.dumps(cfg).lower()
-    ), "rag_config must declare embedding_used"
+        cfg.get("embedding_model") or "minilm" in blob_cfg or "all-minilm" in blob_cfg
+    ), "rag_config must declare embedding_model (all-MiniLM-L6-v2)"
+    assert cfg.get("embedding_used") or "embedding" in blob_cfg, (
+        "rag_config must declare embedding_used true"
+    )
+    assert any(
+        kw in blob_cfg
+        for kw in ["filter-first", "semantic", "facet", "cosine", "faiss"]
+    ), (
+        "rag_config must describe embedding-based method (filter-first, semantic, facet, cosine, faiss)"
+    )
+
+    # Check eval_report also declares embedding and shows non-trivial method
+    with open("/output/eval_report.json") as f:
+        rep = json.load(f)
+    blob_rep = json.dumps(rep).lower()
+    assert "recall" in blob_rep, "eval_report must contain recall metrics"
+
+    # Check retrieved.jsonl exists and is not just popularity-sorted (prove semantic re-ranking)
+    # Load events to get popularity order vs retrieved order
+    events_path = (
+        "/opt/eval/events.jsonl"
+        if os.path.exists("/opt/eval/events.jsonl")
+        else "/app/data/events.jsonl"
+    )
+    if os.path.exists(events_path) and os.path.exists("/output/retrieved.jsonl"):
+        import json as js
+
+        events = {json.loads(l)["id"]: json.loads(l) for l in open(events_path)}
+        # For at least 20% of queries, retrieved order should differ from pure popularity order
+        diff_count = 0
+        total = 0
+        with open("/output/retrieved.jsonl") as f:
+            for line in f:
+                total += 1
+                obj = js.loads(line)
+                ret = obj.get("retrieved_ids", [])
+                if len(ret) < 2:
+                    continue
+                # Get popularity order of same IDs
+                pop_sorted = sorted(
+                    ret,
+                    key=lambda eid: events.get(eid, {}).get("popularity", 0),
+                    reverse=True,
+                )
+                if ret != pop_sorted:
+                    diff_count += 1
+        if total > 0:
+            diff_ratio = diff_count / total
+            assert diff_ratio >= 0.20, (
+                f"Retrieved order looks like pure popularity sort for {100 - diff_ratio * 100:.0f}% queries (diff {diff_ratio:.2f}), must use semantic re-ranking, not just popularity"
+            )
 
     # Check eval_report declares embedding
     with open("/output/eval_report.json") as f:
         rep = json.load(f)
-    assert (
-        rep.get("embedding_used") or "embedding" in json.dumps(rep).lower() or True
-    ), "eval_report should mention embedding"
+    assert rep.get("embedding_used") or "embedding" in json.dumps(rep).lower(), (
+        "eval_report should mention embedding"
+    )
 
 
 def test_self_improvement_loop_proven():

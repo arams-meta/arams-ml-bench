@@ -37,10 +37,13 @@ Constraints:
 - Do NOT read relevance files if present - they are for evaluation only. Recompute relevance using rule above for eval. Do not modify any file in /app/data.
 - The grader RECOMPUTES recall@10 from your retrieved.jsonl against the relevance rule - self-reported numbers in eval_report are checked for schema only, not trusted as scores.
 
-Scoring thresholds (grader recomputes independently):
-- Improved recall@10 >= 0.60 absolute
-- Lift: improved > baseline + 0.08 where baseline is trivial popularity-only filtered by city/category/time/geo/dedup
+Scoring thresholds (grader recomputes independently from hidden ground truth):
+- Improved recall@10 >= 0.60 absolute (recomputed from retrieved.jsonl vs hidden relevance)
+- Lift: improved > baseline + 0.08 where baseline is trivial popularity-only filtered by city/category/time/geo/dedup (recomputed, not trusted from report)
 - Baseline floor: trivial popularity-only has ~0.25 recall because it ignores facet, so improved must beat it by >0.05
-- Holdout generalization: holdout_recall / train_recall >= 0.8 and holdout >=0.45
+- Holdout generalization: holdout_recall / train_recall >= 0.8 and holdout >=0.45 (recomputed)
+- Free-form extraction accuracy: parsed_filters.jsonl city accuracy >=0.60 vs hidden, facet accuracy >=0.50 vs hidden (to prove filter extraction from text)
+- Embedding usage: rag_config must declare embedding_model all-MiniLM-L6-v2 and embedding_used true, and retrieved order must differ from pure popularity sort for >=20% queries (proves semantic re-ranking, not just pop sort)
+- Self-improvement loop: rag_config self_improvement true + steps covering filter/rewrite/rerank + eval_report lift>0.05
 
 Self-improvement loop should analyze low-recall queries and retry techniques like query rewriting, re-ranking, or different filter combinations to achieve the highest recall@10 and largest delta over baseline. You need to figure out how to use the semantic facet and other signals to beat the baseline.
