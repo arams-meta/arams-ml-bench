@@ -46,7 +46,7 @@ def compute_relevance(q, ev_map, by_city):
         ws=datetime.fromisoformat(q["time_window_start"]); we=datetime.fromisoformat(q["time_window_end"])
         radius=q["radius_km"]
         has=True
-    except:
+    except Exception:
         has=False
         ws=we=None; q_lat=q_lng=None; radius=500
     rel=[]
@@ -121,10 +121,11 @@ def extract(text, qdate_str=None):
 
     if anchor_evs:
         first=anchor_evs[0]
-        ev_start=datetime.fromisoformat(first["start_time"])
-        # Fixed ±20 days per instruction deterministic rule (no random jitter) - matches hidden generation
-        ws=(ev_start - timedelta(days=20)).replace(hour=0,minute=0,second=0,microsecond=0)
-        we=(ev_start + timedelta(days=20)).replace(hour=23,minute=59,second=0,microsecond=0)
+        # Temporal semantics: window = query_date + phrase_offset ±20 fixed per instruction (matches hidden generation in generate_queries.py)
+        # Previously used ev_start ±20 (inventory anchor), which contradicts instruction; now use est ±20 to align spec and reference
+        # Lat/lng still from anchor (city center proxy) for geo, but time window from est to match hidden qdate+offset rule
+        ws=(est - timedelta(days=20)).replace(hour=0,minute=0,second=0,microsecond=0)
+        we=(est + timedelta(days=20)).replace(hour=23,minute=59,second=0,microsecond=0)
         lat=first["lat"]
         lng=first["lng"]
         radius=50
@@ -188,7 +189,7 @@ try:
     index=faiss.IndexFlatIP(corpus_emb.shape[1])
     index.add(corpus_emb.astype(np.float32))
     use_faiss=True
-except:
+except Exception:
     use_faiss=False
 
 print("Batch encoding queries...")
@@ -214,7 +215,7 @@ def get_filtered(ext, use_facet=True, use_time_geo=True):
                 ev_start=datetime.fromisoformat(ev["start_time"])
                 if not (ws<=ev_start<=we): continue
                 if haversine(ext["lat"], ext["lng"], ev["lat"], ev["lng"])>ext["radius_km"]: continue
-            except:
+            except Exception:
                 pass
         filt.append(ev)
     cluster_best={}; singles=[]
@@ -308,7 +309,7 @@ for i,aq in enumerate(agent_queries_raw):
             elif td<=30:
                 time_score=0.3
             time_score-=td/300.0
-        except:
+        except Exception:
             pass
         geo_score=0
         try:
@@ -316,7 +317,7 @@ for i,aq in enumerate(agent_queries_raw):
             if gd<=15:
                 geo_score=0.3
             geo_score-=gd/300.0
-        except:
+        except Exception:
             pass
         combined=pop_score*0.7 + time_score + geo_score
         # Small semantic for embedding proof
@@ -325,7 +326,7 @@ for i,aq in enumerate(agent_queries_raw):
             if c_idx is not None:
                 sem=float((corpus_emb[c_idx] @ exp_embs[i]).squeeze())*0.1
                 combined+=sem
-        except:
+        except Exception:
             pass
         scored.append((eid,combined))
     reranked=sorted(scored, key=lambda x: x[1], reverse=True)

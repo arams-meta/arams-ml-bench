@@ -3,9 +3,7 @@
 FROM public.ecr.aws/docker/library/python:3.10.12-slim-bullseye
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git build-essential curl sudo && rm -rf /var/lib/apt/lists/* && \
-    echo "agentuser ALL=(root) NOPASSWD: /bin/chmod, /usr/bin/chmod" >> /etc/sudoers && \
-    echo "agentuser ALL=(root) NOPASSWD: /bin/chmod 755 /opt/eval, /bin/chmod 644 /opt/eval/*, /usr/bin/chmod 755 /opt/eval, /usr/bin/chmod 644 /opt/eval/*" >> /etc/sudoers
+    git build-essential curl && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir \
     sentence-transformers==2.2.2 \
@@ -60,8 +58,9 @@ ENV PYTHONHASHSEED=42
 ENV TRANSFORMERS_OFFLINE=1
 ENV HF_HUB_OFFLINE=1
 
-# Enforce non-root agent for isolation proof: agentuser cannot read /opt/eval 700 root-only
-# Verifier (test.sh) uses sudo to make /opt/eval readable after solver
+# Enforce non-root agent for isolation: agentuser cannot read /opt/eval 700 root-only
+# Verifier runs as root (Harbor) and chmods /opt/eval readable for tests; solver runs as agentuser (isolation)
+# No sudo granted to agentuser - cannot chmod itself, defeating free-form isolation
 USER agentuser
 WORKDIR /app
 CMD ["bash"]

@@ -436,6 +436,6 @@ def test_reference_toy():
     events, queries, relevance = load_ground_truth()
     improved_recall, _ = compute_improved_recall_from_output(events, queries, relevance)
     assert retrieved, "Missing retrieved.jsonl"
-    assert improved_recall >= 0.35, (
-        f"Recall too low for non-trivial solution: {improved_recall:.3f} (need >=0.35 free-form)"
+    assert improved_recall >= 0.40, (
+        f"Recall too low for non-trivial solution: {improved_recall:.3f} (need >=0.40 free-form, aligned with test_recall_absolute_threshold)"
     )
