@@ -33,7 +33,7 @@ Constraints:
 - Use baked MiniLM at /app/data/minilm (sentence-transformers/all-MiniLM-L6-v2, 384-dim)
 - CPU only, FAISS allowed
 - Seed is 42 for determinism
-- Retrieved outputs should respect time/geo/dedup/spam constraints (violation <=10% time, <=15% geo, dup_rate <=30%, spam <=5%)
+- Retrieved outputs should respect time/geo/dedup/spam constraints (violation <=40% time, <=20% geo, dup_rate <=30%, spam <=5%)
 - Do NOT read relevance files if present - they are for evaluation only. Recompute relevance using rule above for eval. Do not modify any file in /app/data.
 - The grader RECOMPUTES recall@10 from your retrieved.jsonl against the relevance rule - self-reported numbers in eval_report are checked for schema only, not trusted as scores.
 

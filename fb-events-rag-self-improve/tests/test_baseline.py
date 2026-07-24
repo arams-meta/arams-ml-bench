@@ -344,9 +344,14 @@ def test_beats_trivial():
     os.makedirs("/logs/verifier", exist_ok=True)
     with open("/logs/verifier/baseline_score.txt", "w") as bf:
         bf.write(f"agent={improved:.3f} baseline_popularity={base:.3f}\n")
-    # If trivial baseline couldn't compute (0.0), use 0.27 as reference from earlier analysis
-    if base == 0.0:
-        base = 0.27
+    # base == 0.0 means the trivial baseline could not be recomputed from ground
+    # truth (unreadable events/queries or empty relevance) - that is a pipeline
+    # failure, not a real baseline. Fail loudly instead of masking it with a
+    # hardcoded reference value that would weaken the lift signal.
+    assert base > 0.0, (
+        "Trivial popularity baseline recomputed as 0.0 - ground truth unreadable "
+        "or relevance empty; cannot establish a lift floor"
+    )
     assert improved > base + 0.05, (
         f"Agent {improved:.3f} should beat trivial popularity baseline {base:.3f} by 0.05"
     )
