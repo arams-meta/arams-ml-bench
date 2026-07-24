@@ -18,44 +18,7 @@ def load_jsonl(path):
 
 
 def load_ground_truth():
-    """Load events/queries/relevance from hidden /opt/eval first - robust to platform, auto-generates hidden at test time if missing for defense-in-depth"""
-    # Defense-in-depth: hidden structured queries are NOT present at solve time (only events + generators), generated at test.sh time
-    # If missing due to platform chmod behavior, try to generate deterministically (same seed 42) rather than hard-failing entire suite
-    # This avoids brittle reward that depends on runtime USER enforcement, while still preventing weak free-form fallback
-    if not os.path.exists("/opt/eval/queries.jsonl") and os.path.exists(
-        "/opt/eval/generate_queries.py"
-    ):
-        # Try to generate hidden at test time (deterministic, seed 42)
-        try:
-            import subprocess, sys
-
-            subprocess.run(
-                [
-                    sys.executable,
-                    "/opt/eval/generate_queries.py",
-                    "--events",
-                    "/opt/eval/events.jsonl",
-                    "--n",
-                    "500",
-                    "--seed",
-                    "42",
-                    "--out-queries",
-                    "/opt/eval/queries.jsonl",
-                    "--out-rel",
-                    "/tmp/relevance.jsonl",
-                    "--out-holdout-queries",
-                    "/opt/eval/holdout_queries.jsonl",
-                    "--out-holdout-rel",
-                    "/tmp/holdout_relevance.jsonl",
-                    "--holdout-n",
-                    "100",
-                ],
-                timeout=60,
-                check=False,
-            )
-        except Exception:
-            pass
-
+    """Load events/queries/relevance from hidden /opt/eval first to avoid agent tampering - present at build with 700 root"""
     events_paths = ["/opt/eval/events.jsonl", "/app/data/events.jsonl"]
     queries_paths = ["/opt/eval/queries.jsonl", "/app/data/queries.jsonl"]
     relevance_paths = [
@@ -71,51 +34,11 @@ def load_ground_truth():
 
     events = {e["id"]: e for e in load_jsonl(events_file)}
     queries = {q["id"]: q for q in load_jsonl(queries_file)}
-    # Hidden queries should have structured fields (city, time_window) - if we get free-form, we are in weak fallback mode
-    # Instead of hard-asserting on /opt/eval readability (brittle), check structured field presence and relevance non-empty
+    # Hidden must have structured fields - free-form agent queries have only id+text+query_date
+    # This check ensures we loaded hidden structured ground truth, not weak free-form fallback that would be same heuristic as oracle
     sample_q = next(iter(queries.values())) if queries else {}
-    # If structured fields missing, we are in agent-visible free-form fallback - recompute would be same heuristic as oracle (weak), so we treat as pipeline failure not weak label scoring
-    # We keep this check but as informative, not as hard dependency on /opt/eval chmod
-    if "city" not in sample_q or "time_window_start" not in sample_q:
-        # Try one more time to generate hidden if generator exists
-        if os.path.exists("/opt/eval/generate_queries.py"):
-            try:
-                import subprocess, sys
-
-                subprocess.run(
-                    [
-                        sys.executable,
-                        "/opt/eval/generate_queries.py",
-                        "--events",
-                        events_file,
-                        "--n",
-                        "500",
-                        "--seed",
-                        "42",
-                        "--out-queries",
-                        "/opt/eval/queries.jsonl",
-                        "--out-rel",
-                        "/tmp/relevance.jsonl",
-                        "--out-holdout-queries",
-                        "/opt/eval/holdout_queries.jsonl",
-                        "--out-holdout-rel",
-                        "/tmp/holdout_relevance.jsonl",
-                        "--holdout-n",
-                        "100",
-                    ],
-                    timeout=60,
-                    check=False,
-                )
-                if os.path.exists("/opt/eval/queries.jsonl"):
-                    queries = {
-                        q["id"]: q for q in load_jsonl("/opt/eval/queries.jsonl")
-                    }
-                    sample_q = next(iter(queries.values())) if queries else {}
-            except Exception:
-                pass
-    # Final check: must have structured fields to avoid weak heuristic scoring
     assert "city" in sample_q and "time_window_start" in sample_q, (
-        f"Queries missing structured fields city/time_window: got {list(sample_q.keys())} - need hidden /opt/eval generated at test time"
+        f"Queries missing structured fields city/time_window: got {list(sample_q.keys())} - need hidden /opt/eval with city/facet/time"
     )
 
     relevance = {}

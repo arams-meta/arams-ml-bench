@@ -22,12 +22,11 @@ RUN useradd -m agentuser || true && \
 
 COPY references/ /tmp/build_refs/
 
-# Generate at build time: events + full queries
+# Generate at build time: events + full structured queries (hidden ground truth)
 # Agent-visible: events + minimal free-form queries (id+text+query_date) in /app/data (no structured city/facet leak)
-# Hidden ground truth for verifier: full structured queries generated at TEST TIME for defense-in-depth (not present at solve time)
-# If Harbor runs agent as root, free-form challenge would collapse if structured queries were readable at solve time. Now they don't exist at solve.
+# Hidden ground truth for verifier: full structured queries with city/category/facet/time/radius/lat/lng in /opt/eval (700 root:root)
+# For defense-in-depth, hidden is also generated at test.sh if missing, but present at build so reward depends on build-time 700 isolation
 # NO relevance.jsonl anywhere (recomputed on-the-fly) to avoid label leakage
-# Isolation: /opt/eval is chmod 700 root:root at build, contains only events + generators, hidden queries generated at test.sh time
 RUN python3 /tmp/build_refs/generate_events.py --n 20000 --seed 42 --out /app/data/events.jsonl && \
     python3 /tmp/build_refs/generate_queries.py \
       --events /app/data/events.jsonl \
@@ -39,6 +38,8 @@ RUN python3 /tmp/build_refs/generate_events.py --n 20000 --seed 42 --out /app/da
       --holdout-n 100 && \
     mkdir -p /opt/eval && \
     cp /app/data/events.jsonl /opt/eval/events.jsonl && \
+    cp /tmp/full_queries.jsonl /opt/eval/queries.jsonl && \
+    cp /tmp/full_holdout_queries.jsonl /opt/eval/holdout_queries.jsonl && \
     cp /tmp/build_refs/generate_events.py /opt/eval/generate_events.py && \
     cp /tmp/build_refs/generate_queries.py /opt/eval/generate_queries.py && \
     python3 -c "import json; \
@@ -46,11 +47,10 @@ f='/tmp/full_queries.jsonl'; o='/app/data/queries.jsonl'; \
 open(o,'w').write(''.join(json.dumps({'id': json.loads(l)['id'], 'text': json.loads(l)['text'], 'query_date': json.loads(l)['query_date']})+'\n' for l in open(f))); \
 f='/tmp/full_holdout_queries.jsonl'; o='/app/data/holdout_queries.jsonl'; \
 open(o,'w').write(''.join(json.dumps({'id': json.loads(l)['id'], 'text': json.loads(l)['text'], 'query_date': json.loads(l)['query_date']})+'\n' for l in open(f))); \
-print('Stripped agent-visible to free-form only, hidden queries NOT in /opt/eval at solve time (defense-in-depth)') " && \
+print('Stripped agent-visible to free-form only, hidden 700 root in /opt/eval (700 perms)') " && \
     chmod 700 /opt/eval && chown -R root:root /opt/eval && \
     ls -lh /app/data/ && ls -lh /opt/eval/ && \
     echo "No relevance file anywhere (recomputed on-the-fly):" && (ls /app/data/*relev* /opt/eval/*relev* 2>&1 | grep relev && echo "LEAK" || echo "no relevance - good") && \
-    echo "Defense-in-depth: hidden structured queries not present at solve time, only events + generators in /opt/eval (generated at test.sh)" && ls /opt/eval/ && \
     rm -rf /tmp/build_refs /tmp/full_queries.jsonl /tmp/full_holdout_queries.jsonl /tmp/relevance.jsonl /tmp/holdout_relevance.jsonl
 
 RUN python3 -c "from sentence_transformers import SentenceTransformer; m=SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2'); m.save('/app/data/minilm')" && \

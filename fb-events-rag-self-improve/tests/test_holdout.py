@@ -77,41 +77,8 @@ def compute_relevance_for_query(q, valid_events, ev_map, by_city):
 
 
 def load_ground_truth():
-    # Defense-in-depth: hidden not present at solve time, generated at test.sh time; if missing due to platform, auto-generate deterministically
-    # Avoids brittle hard-asserts on /opt/eval readability that make reward depend on runtime USER/chmod
-    if not os.path.exists("/opt/eval/queries.jsonl") and os.path.exists(
-        "/opt/eval/generate_queries.py"
-    ):
-        try:
-            import subprocess, sys
-
-            subprocess.run(
-                [
-                    sys.executable,
-                    "/opt/eval/generate_queries.py",
-                    "--events",
-                    "/opt/eval/events.jsonl",
-                    "--n",
-                    "500",
-                    "--seed",
-                    "42",
-                    "--out-queries",
-                    "/opt/eval/queries.jsonl",
-                    "--out-rel",
-                    "/tmp/relevance.jsonl",
-                    "--out-holdout-queries",
-                    "/opt/eval/holdout_queries.jsonl",
-                    "--out-holdout-rel",
-                    "/tmp/holdout_relevance.jsonl",
-                    "--holdout-n",
-                    "100",
-                ],
-                timeout=60,
-                check=False,
-            )
-        except Exception:
-            pass
-
+    # Hidden ground truth present at build with 700 root:root, made readable at test.sh chmod 755 for verifier
+    # Reward depends on build-time 700 isolation + USER agentuser
     events_paths = ["/opt/eval/events.jsonl", "/app/data/events.jsonl"]
     queries_paths = ["/opt/eval/queries.jsonl", "/app/data/queries.jsonl"]
     h_queries_paths = [

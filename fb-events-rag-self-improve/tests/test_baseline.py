@@ -103,41 +103,7 @@ def compute_relevance(q, ev_map, by_city):
 
 
 def load_ground_truth():
-    # Defense-in-depth: hidden not present at solve time, generated at test.sh time; auto-generate if missing rather than hard-fail
-    # Avoids brittle reward that depends on runtime USER/chmod
-    if not os.path.exists("/opt/eval/queries.jsonl") and os.path.exists(
-        "/opt/eval/generate_queries.py"
-    ):
-        try:
-            import subprocess, sys
-
-            subprocess.run(
-                [
-                    sys.executable,
-                    "/opt/eval/generate_queries.py",
-                    "--events",
-                    "/opt/eval/events.jsonl",
-                    "--n",
-                    "500",
-                    "--seed",
-                    "42",
-                    "--out-queries",
-                    "/opt/eval/queries.jsonl",
-                    "--out-rel",
-                    "/tmp/relevance.jsonl",
-                    "--out-holdout-queries",
-                    "/opt/eval/holdout_queries.jsonl",
-                    "--out-holdout-rel",
-                    "/tmp/holdout_relevance.jsonl",
-                    "--holdout-n",
-                    "100",
-                ],
-                timeout=60,
-                check=False,
-            )
-        except Exception:
-            pass
-
+    # Hidden present at build with 700 root:root, made readable at test.sh for verifier - reward depends on build-time isolation
     events_paths = [
         "/opt/eval/events.jsonl",
         "/app/data/events.jsonl",

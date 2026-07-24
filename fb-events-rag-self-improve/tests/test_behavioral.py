@@ -35,42 +35,9 @@ def test_parsed_filters_exists_and_valid():
     for entry in lines[:5]:
         for r in required:
             assert r in entry, f"parsed filter missing {r}: {entry}"
-    # Accuracy checks: hidden ground truth must exist for defense-in-depth robustness, auto-generate if missing at test time
-    # Fixes Medium: free-form accuracy thresholds only enforced inside if hidden and silently skip when unreadable
+    # Accuracy checks: hidden ground truth must exist at build (700 root) and made readable at test.sh for verifier
+    # Present at build so reward depends on build-time 700 isolation, not auto-generated at verify time
     hidden = {}
-    # Try to generate hidden at test time if missing (defense-in-depth: not present at solve time, generated at test.sh)
-    if not os.path.exists("/opt/eval/queries.jsonl") and os.path.exists(
-        "/opt/eval/generate_queries.py"
-    ):
-        try:
-            import subprocess, sys
-
-            subprocess.run(
-                [
-                    sys.executable,
-                    "/opt/eval/generate_queries.py",
-                    "--events",
-                    "/opt/eval/events.jsonl",
-                    "--n",
-                    "500",
-                    "--seed",
-                    "42",
-                    "--out-queries",
-                    "/opt/eval/queries.jsonl",
-                    "--out-rel",
-                    "/tmp/relevance.jsonl",
-                    "--out-holdout-queries",
-                    "/opt/eval/holdout_queries.jsonl",
-                    "--out-holdout-rel",
-                    "/tmp/holdout_relevance.jsonl",
-                    "--holdout-n",
-                    "100",
-                ],
-                timeout=60,
-                check=False,
-            )
-        except Exception:
-            pass
     for p in ["/opt/eval/queries.jsonl", "data/queries_full_hidden.jsonl"]:
         if os.path.exists(p):
             try:
@@ -79,7 +46,7 @@ def test_parsed_filters_exists_and_valid():
                 break
             except Exception:
                 pass
-    # Now hidden must exist - fail loudly if not, not silently skip (fixes silent skip gap)
+    # Fail loudly if hidden not readable (not silently skip) - ensures extraction accuracy enforced
     assert hidden, (
         "Hidden ground truth /opt/eval/queries.jsonl not readable even after auto-generation - cannot verify extraction accuracy"
     )
@@ -485,28 +452,64 @@ def test_no_relevance_file_anywhere():
 
 
 def test_opt_eval_unavailable_from_agent():
-    """Behavioral leakage check that /opt/eval relevance is unavailable from agent process
-    After fix, /opt/eval should either not exist or not contain relevance, and hidden structured queries should be root-only 700 if present.
-    """
-    # Check no relevance file
+    """Isolation: hidden ground truth must be root-owned 700 at build and agent-visible must be free-form only"""
+    # No relevance file anywhere (label leakage)
+    assert not os.path.exists("/app/data/relevance.jsonl"), (
+        "/app/data/relevance.jsonl must not exist"
+    )
+    assert not os.path.exists("/app/data/holdout_relevance.jsonl"), (
+        "holdout relevance must not exist in /app/data"
+    )
     assert not os.path.exists("/opt/eval/relevance.jsonl"), (
-        "/opt/eval/relevance.jsonl must be unavailable to agent"
+        "/opt/eval relevance must not exist anywhere (recomputed on-the-fly)"
     )
     assert not os.path.exists("/opt/eval/holdout_relevance.jsonl"), (
-        "/opt/eval/holdout_relevance.jsonl must be unavailable"
+        "holdout relevance must not exist"
     )
-    # If /opt/eval exists, check its permissions are 700 (not world-readable) to prove isolation
-    if os.path.exists("/opt/eval"):
-        import stat
 
-        mode = oct(os.stat("/opt/eval").st_mode)[-3:]
-        # Allow 700 or 755 after test.sh chmod, but at build it should be 700
-        # We check that it is not world-readable with relevance, which we already checked
-        # Additionally, try to read as agentuser if user exists - should fail when 700
-        # This is best-effort: if agentuser exists, su should fail to read when 700
-        # Since test.sh chmods 755 before this test, we check that original build was 700 via Dockerfile inspection?
-        # Instead, we ensure that even if /opt/eval/queries.jsonl exists, agent-visible /app/data/queries is free-form (checked above)
-        pass
+    # Agent-visible queries must be free-form only id+text+query_date (proves structured not agent-readable)
+    agent_q_path = "/app/data/queries.jsonl"
+    assert os.path.exists(agent_q_path), "Missing agent queries"
+    with open(agent_q_path) as f:
+        sample = json.loads(next(f))
+    assert "text" in sample and "id" in sample, "Agent queries must have id+text"
+    forbidden = [
+        "city",
+        "facet",
+        "time_window_start",
+        "time_window_end",
+        "radius_km",
+        "lat",
+        "lng",
+        "category",
+        "anchored",
+    ]
+    present = [k for k in forbidden if k in sample]
+    assert not present, (
+        f"Agent-visible queries should be free-form only, but contain {present} - enables cheating"
+    )
+
+    # Hidden structured queries must exist at build (700 root:root) and made readable at test.sh chmod 755 for verifier
+    # Present at build so reward depends on build-time 700 isolation (defense-in-depth via USER agentuser + solve.sh root check)
+    hidden_path = "/opt/eval/queries.jsonl"
+    assert os.path.exists(hidden_path), (
+        "Hidden /opt/eval/queries.jsonl must exist at build (700 root), made readable at test time"
+    )
+    st = os.stat(hidden_path)
+    assert st.st_uid == 0, (
+        "Hidden queries should be owned by root (isolation: agentuser cannot chown root files)"
+    )
+    with open(hidden_path) as hf:
+        h_sample = json.loads(next(hf))
+    assert (
+        "city" in h_sample and "facet" in h_sample and "time_window_start" in h_sample
+    ), (
+        f"Hidden queries must have structured fields city/facet/time: got {list(h_sample.keys())}"
+    )
+    # Also check hidden has more fields than agent-visible (proves free-form vs structured distinction)
+    assert len(h_sample.keys()) > len(sample.keys()), (
+        "Hidden should have more fields than agent-visible free-form"
+    )
 
 
 def test_holdout_structured_hidden():

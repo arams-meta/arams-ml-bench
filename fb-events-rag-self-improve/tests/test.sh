@@ -3,26 +3,9 @@
 set -uo pipefail
 mkdir -p /logs/verifier
 
-# Defense-in-depth: hidden structured queries are NOT present at solve time (only events + generators in /opt/eval)
-# At test time, we generate them deterministically (same seed 42) to avoid having them readable during solve even if agent runs as root
-# This fixes Medium Env: isolation no longer depends entirely on Harbor honoring USER, hidden simply doesn't exist at solve time
-if [ ! -f /opt/eval/queries.jsonl ] || [ ! -f /opt/eval/holdout_queries.jsonl ]; then
-  if [ -f /opt/eval/generate_queries.py ] && [ -f /opt/eval/events.jsonl ]; then
-    python3 /opt/eval/generate_queries.py \
-      --events /opt/eval/events.jsonl \
-      --n 500 --seed 42 \
-      --out-queries /opt/eval/queries.jsonl \
-      --out-rel /tmp/relevance.jsonl \
-      --out-holdout-queries /opt/eval/holdout_queries.jsonl \
-      --out-holdout-rel /tmp/holdout_relevance.jsonl \
-      --holdout-n 100 2>&1 | head -20
-    rm -f /tmp/relevance.jsonl /tmp/holdout_relevance.jsonl
-  fi
-fi
-
-# Isolation: /opt/eval is chmod 700 root-only at build to prevent agent reading during solver phase.
-# For verifier (tests) we make it readable. Behavioral test checks it was unreadable from agentuser.
-# Dockerfile enforces USER agentuser for solver; verifier runs as root in Harbor and can chmod without sudo
+# Isolation: /opt/eval is chmod 700 root:root at build (hidden structured queries with city/facet/time)
+# Agentuser cannot read 700 root-only during solve (Dockerfile USER agentuser). For verifier, make readable.
+# Hidden is present at build (defense-in-depth via USER + root check in solve.sh), not generated at verify time, so reward depends on build-time isolation
 chmod 755 /opt/eval 2>/dev/null || true
 chmod 644 /opt/eval/* 2>/dev/null || true
 

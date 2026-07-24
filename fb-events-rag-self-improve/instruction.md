@@ -29,29 +29,18 @@ Free-form extraction requirement: queries only have text like "best Thai Food ev
 Embedding requirement: you must use baked MiniLM embeddings for semantic ranking, prove usage via rag_config embedding_used and code containing SentenceTransformer / corpus_emb.npy usage.
 
 Constraints:
-- No external API
-- Use baked MiniLM at /app/data/minilm (sentence-transformers/all-MiniLM-L6-v2, 384-dim)
-- CPU only, FAISS allowed
-- Seed is 42 for determinism
-- Retrieved outputs should respect time/geo/dedup/spam constraints (violation <=40% time, <=20% geo, dup_rate <=30%, spam <=5%)
-- Do NOT read relevance files if present - they are for evaluation only. Recompute relevance using rule above for eval. Do not modify any file in /app/data.
-- The grader RECOMPUTES recall@10 from your retrieved.jsonl against the relevance rule - self-reported numbers in eval_report are checked for schema only, not trusted as scores.
+- No external API, use baked MiniLM at /app/data/minilm (384-dim), CPU only, FAISS allowed, seed 42
+- Do NOT read /opt/eval if present - grading only. Do NOT modify /app/data
+- Grader recomputes recall from retrieved.jsonl vs hidden, self-reported eval_report is schema only
 
 Temporal semantics (deterministic):
-- query_date is ISO date of query issuance (e.g., 2026-02-20)
-- Time phrases map to offsets from query_date:
-  tomorrow = query_date+1 day, this weekend = query_date+3 days, next week = +10 days,
-  this month = +15 days, next month = +45 days
-- time_window_start/end are query_date + phrase_offset ±20 days fixed (deterministic)
-- Geo: lat/lng = city center, radius_km 50 fixed
+- query_date is query issuance date
+- Time phrases: tomorrow +1d, weekend +3d, next week +10d, this month +15d, next month +45d
+- time_window = query_date + phrase_offset ±20d fixed, lat/lng = city center, radius 50 fixed
 
-Scoring thresholds (grader recomputes from hidden ground truth in /opt/eval):
-- Improved recall@10 >= 0.40 absolute
-- Lift: improved > baseline + 0.08 (baseline is trivial popularity-only, ~0.25-0.30 because it ignores facet)
-- Holdout: holdout recall >=0.25 and ratio >=0.4
-- Time/geo/dedup/spam: time <=40%, geo <=20%, dup_rate <=30%, spam <=5%
+Scoring thresholds (recomputed from hidden /opt/eval):
+- Improved recall@10 >=0.40, lift > baseline+0.08 (baseline ~0.27 pop-only ignoring facet), holdout >=0.25 ratio >=0.4
+- Time/geo/dedup/spam: time <=40%, geo <=20%, dup <=30%, spam <=5%
 - Free-form extraction: city >=0.60, facet >=0.50, category >=0.40
-- Embedding: must use baked MiniLM at /app/data/minilm, rag_config embedding_model all-MiniLM-L6-v2 and embedding_used true, plus facet-match rate >=60% on retrieved (topic==facet) proving facet-aware filtering
-- Self-improvement: rag_config self_improvement true, 500 parsed, 500 retrieved, 100 holdout
-
-Constraints: Do NOT read /opt/eval if present - grading only. Do NOT modify /app/data.
+- Embedding: must use MiniLM, rag_config embedding_model all-MiniLM-L6-v2 and embedding_used true, facet-match >=60% on retrieved (topic==facet)
+- Self-improvement: rag_config self_improvement true, 500 parsed, 500 retrieved, 100 holdout, lift>0.08
