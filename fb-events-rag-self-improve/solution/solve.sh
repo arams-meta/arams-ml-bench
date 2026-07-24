@@ -229,17 +229,16 @@ def get_filtered(ext, use_facet=True, use_time_geo=True):
     return list(cluster_best.values())+singles
 
 def get_filtered_multi_anchor(extracted):
-    """Union of 3 time windows around closest inventory anchors for robust recall"""
+    """Union of 3 time windows around inventory anchors for holdout robustness - uses ±20d per instruction (not ±30d that exceeds hidden rule)"""
     if not extracted.get("city"):
         return []
-    # Use the _anchor_evs if present, else fallback to single
     anchor_evs=extracted.get("_anchor_evs", [])
     if not anchor_evs:
         return get_filtered(extracted, use_facet=True, use_time_geo=True)
     merged={}
     for anchor in anchor_evs:
-        ws=(datetime.fromisoformat(anchor["start_time"]) - timedelta(days=30)).replace(hour=0,minute=0,second=0,microsecond=0)
-        we=(datetime.fromisoformat(anchor["start_time"]) + timedelta(days=30)).replace(hour=23,minute=59,second=0,microsecond=0)
+        ws=(datetime.fromisoformat(anchor["start_time"]) - timedelta(days=20)).replace(hour=0,minute=0,second=0,microsecond=0)
+        we=(datetime.fromisoformat(anchor["start_time"]) + timedelta(days=20)).replace(hour=23,minute=59,second=0,microsecond=0)
         temp={
             "city": extracted["city"],
             "facet": extracted.get("facet"),

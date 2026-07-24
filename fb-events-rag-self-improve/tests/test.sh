@@ -65,17 +65,7 @@ if [ -f /tests/test_baseline.py ]; then
   fi
 fi
 
-# Reference anchor informational (must not be || true - should be blocking if present, but keep as info)
-if [ -f /tests/test_reference.py ]; then
-  set +e
-  pytest /tests/test_reference.py -v --tb=short 2>&1
-  REF_EXIT=$?
-  set -e
-  # don't fail main reward on reference, but log
-  if [ $REF_EXIT -ne 0 ]; then
-    echo reference_failed >> /logs/verifier/reference_status.txt 2>/dev/null || true
-  fi
-fi
+# No reference anchor needed (removed stale test_reference.py guard)
 
 # Main scoring
 set +e

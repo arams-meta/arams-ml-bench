@@ -35,44 +35,74 @@ def test_parsed_filters_exists_and_valid():
     for entry in lines[:5]:
         for r in required:
             assert r in entry, f"parsed filter missing {r}: {entry}"
-    # Accuracy checks: if hidden ground truth exists in /opt/eval, compare
-    # After fix, /opt/eval may have full queries with 700 perms, but we try to load if readable
+    # Accuracy checks: hidden ground truth must exist for defense-in-depth robustness, auto-generate if missing at test time
+    # Fixes Medium: free-form accuracy thresholds only enforced inside if hidden and silently skip when unreadable
     hidden = {}
-    for p in [
-        "/opt/eval/queries.jsonl",
-        "/app/data/../data/queries_full_hidden.jsonl",
-        "data/queries_full_hidden.jsonl",
-    ]:
+    # Try to generate hidden at test time if missing (defense-in-depth: not present at solve time, generated at test.sh)
+    if not os.path.exists("/opt/eval/queries.jsonl") and os.path.exists(
+        "/opt/eval/generate_queries.py"
+    ):
+        try:
+            import subprocess, sys
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    "/opt/eval/generate_queries.py",
+                    "--events",
+                    "/opt/eval/events.jsonl",
+                    "--n",
+                    "500",
+                    "--seed",
+                    "42",
+                    "--out-queries",
+                    "/opt/eval/queries.jsonl",
+                    "--out-rel",
+                    "/tmp/relevance.jsonl",
+                    "--out-holdout-queries",
+                    "/opt/eval/holdout_queries.jsonl",
+                    "--out-holdout-rel",
+                    "/tmp/holdout_relevance.jsonl",
+                    "--holdout-n",
+                    "100",
+                ],
+                timeout=60,
+                check=False,
+            )
+        except Exception:
+            pass
+    for p in ["/opt/eval/queries.jsonl", "data/queries_full_hidden.jsonl"]:
         if os.path.exists(p):
             try:
                 with open(p) as f:
                     hidden = {json.loads(l)["id"]: json.loads(l) for l in f}
                 break
-            except:
+            except Exception:
                 pass
-    if hidden:
+    # Now hidden must exist - fail loudly if not, not silently skip (fixes silent skip gap)
+    assert hidden, (
+        "Hidden ground truth /opt/eval/queries.jsonl not readable even after auto-generation - cannot verify extraction accuracy"
+    )
 
-        def acc_for(field, thresh):
-            correct = 0
-            total = 0
-            for entry in lines:
-                qid = entry["query_id"]
-                if qid not in hidden:
-                    continue
-                total += 1
-                if str(entry.get(field)) == str(hidden[qid].get(field)):
-                    correct += 1
-            if total > 0:
-                acc = correct / total
-                assert acc >= thresh, (
-                    f"Parsed {field} accuracy too low: {acc:.2f} (need >={thresh})"
-                )
+    def acc_for(field, thresh):
+        correct = 0
+        total = 0
+        for entry in lines:
+            qid = entry["query_id"]
+            if qid not in hidden:
+                continue
+            total += 1
+            if str(entry.get(field)) == str(hidden[qid].get(field)):
+                correct += 1
+        if total > 0:
+            acc = correct / total
+            assert acc >= thresh, (
+                f"Parsed {field} accuracy too low: {acc:.2f} (need >={thresh})"
+            )
 
-        # Check category, time, radius, lat/lng accuracy directly per latest feedback
-        acc_for("city", 0.60)
-        acc_for("facet", 0.50)
-        acc_for("category", 0.40)
-        # Time/radius/lat/lng presence already checked in required
+    acc_for("city", 0.60)
+    acc_for("facet", 0.50)
+    acc_for("category", 0.40)
 
 
 def test_embedding_usage_proven():

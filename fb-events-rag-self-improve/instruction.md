@@ -37,27 +37,21 @@ Constraints:
 - Do NOT read relevance files if present - they are for evaluation only. Recompute relevance using rule above for eval. Do not modify any file in /app/data.
 - The grader RECOMPUTES recall@10 from your retrieved.jsonl against the relevance rule - self-reported numbers in eval_report are checked for schema only, not trusted as scores.
 
-Temporal semantics (deterministic, standard rule from query_date per TBR feedback):
+Temporal semantics (deterministic):
 - query_date is ISO date of query issuance (e.g., 2026-02-20)
-- Time phrases map to offsets from query_date (deterministic):
+- Time phrases map to offsets from query_date:
   tomorrow = query_date+1 day, this weekend = query_date+3 days, next week = +10 days,
-  this month = +15 days, next month = +45 days, this Friday = +4 days
-- time_window_start/end are query_date + phrase_offset ±20 days fixed (no random jitter, deterministic)
-  So a parser that extracts phrase and adds ±20 days around query_date+offset will exactly match hidden windows.
-  This follows practice guide to make hidden time windows follow standard deterministic rules from query_date (fixes R01 Spec sufficiency and R08 Accepts alternatives).
-- Geo: lat/lng = city center (average lat/lng of events in city, no jitter) or anchor lat/lng, radius_km 50 fixed. Agent must extract city and use city center for geo.
+  this month = +15 days, next month = +45 days
+- time_window_start/end are query_date + phrase_offset ±20 days fixed (deterministic)
+- Geo: lat/lng = city center, radius_km 50 fixed
 
-Scoring thresholds (grader recomputes independently from hidden ground truth in /opt/eval, not self-reported):
-- Improved recall@10 >= 0.40 absolute (free-form, recomputed from retrieved.jsonl vs hidden relevance)
-- Lift: improved > baseline + 0.08 where baseline is trivial popularity-only filtered by city/category/time/geo/dedup and recomputed (baseline ignores facet, so ~0.25-0.30). Strictest gate is 0.08.
-- Baseline floor: trivial pop-only has ~0.25-0.30 recall because it ignores facet, improved must beat baseline by >0.08 (recomputed from retrieved) - same as lift gate
-- Holdout: holdout recall >=0.25 and holdout/train ratio >=0.4 (free-form, recomputed)
-- Time/geo/dedup/spam constraints: time violation <=40%, geo <=20%, dup_rate <=30%, spam <=5%
-- Free-form extraction accuracy (parsed_filters.jsonl vs hidden /opt/eval):
-  city >=0.60, category >=0.40, facet >=0.50, time_window present, radius/lat/lng present
-- Embedding usage: rag_config must contain embedding_model all-MiniLM-L6-v2 and embedding_used true, plus steps describing filter-first, semantic, facet
-  Behavioral proof: retrieved events must have facet-match rate >=60% (retrieved event topic == query facet). Baseline pop-only ignores facet and gets ~8% facet-match (30 topics random), so 60% proves facet-aware semantic filtering via embeddings. Baked artifacts /app/data/minilm + corpus_emb.npy must exist (offline model, no API).
-- Self-improvement loop: rag_config self_improvement true + steps covering filter/rewrite/rerank, eval_report lift>0.08 (same as lift gate), parsed_filters_count 500, retrieved_count 500
-- Isolation: hidden ground truth in /opt/eval is generated at test time (not present at solve time for defense-in-depth) and chmod 700 root:root is NOT agent-readable; agent-visible queries are free-form only id+text+query_date. Solver must run as non-root agentuser (enforced via Dockerfile USER agentuser and solve.sh root check) - no sudo granted to agent to bypass. Do NOT attempt to read /opt/eval.
+Scoring thresholds (grader recomputes from hidden ground truth in /opt/eval):
+- Improved recall@10 >= 0.40 absolute
+- Lift: improved > baseline + 0.08 (baseline is trivial popularity-only, ~0.25-0.30 because it ignores facet)
+- Holdout: holdout recall >=0.25 and ratio >=0.4
+- Time/geo/dedup/spam: time <=40%, geo <=20%, dup_rate <=30%, spam <=5%
+- Free-form extraction: city >=0.60, facet >=0.50, category >=0.40
+- Embedding: must use baked MiniLM at /app/data/minilm, rag_config embedding_model all-MiniLM-L6-v2 and embedding_used true, plus facet-match rate >=60% on retrieved (topic==facet) proving facet-aware filtering
+- Self-improvement: rag_config self_improvement true, 500 parsed, 500 retrieved, 100 holdout
 
-Self-improvement loop should analyze low-recall queries and retry techniques like query rewriting, re-ranking, or different filter combinations to achieve the highest recall@10 and largest delta over baseline. You need to figure out how to use the semantic facet and other signals to beat the baseline.
+Constraints: Do NOT read /opt/eval if present - grading only. Do NOT modify /app/data.
