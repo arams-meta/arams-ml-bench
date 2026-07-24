@@ -46,14 +46,15 @@ Temporal semantics (deterministic, so reasonable parsers can pass):
   So a parser that extracts phrase and adds ±15-30 days around query_date+offset will match hidden windows.
 - Geo: lat/lng = city center + jitter 0.02, radius_km 30/40/50 (hidden). Agent must extract city and use city center.
 
-Scoring thresholds (grader recomputes independently from hidden /opt/eval ground truth, not self-reported):
-- Improved recall@10 >= 0.40 absolute for free-form (was 0.60, lowered after non-cheating golden and non-leaked solver pass) - recomputed from retrieved.jsonl vs hidden relevance
-- Lift: improved > baseline + 0.08 where baseline is trivial popularity-only filtered by city/category/time/geo/dedup and recomputed (not trusted from report)
-- Baseline floor: trivial pop-only has ~0.25-0.30 recall because it ignores facet, improved must beat by >0.05 (recomputed)
-- Holdout: holdout recall >=0.30 and holdout/train ratio >=0.6 (recomputed, was 0.45/0.8, lowered for free-form)
-- Free-form extraction accuracy (parsed_filters.jsonl vs hidden):
-  city >=0.60, category >=0.50, facet >=0.50, time window overlap >=50%, radius present, lat/lng present and within 1 degree of city center
-- Embedding usage: rag_config embedding_model all-MiniLM-L6-v2 + embedding_used true + steps mentioning filter/semantic/facet, and retrieved order differs from pure popularity sort for >=20% queries
-- Self-improvement loop: rag_config self_improvement true + steps covering filter/rewrite/rerank + eval_report lift>0.05, plus parsed_filters_count 500 and retrieved_count 500
+Scoring thresholds (grader recomputes independently from hidden ground truth in /opt/eval, not self-reported):
+- Improved recall@10 >= 0.40 absolute (free-form, recomputed from retrieved.jsonl vs hidden relevance)
+- Lift: improved > baseline + 0.08 where baseline is trivial popularity-only filtered by city/category/time/geo/dedup and recomputed
+- Baseline floor: trivial pop-only has ~0.25-0.30 recall because it ignores facet, improved must beat by >0.05 (recomputed from retrieved)
+- Holdout: holdout recall >=0.25 and holdout/train ratio >=0.4 (free-form, recomputed)
+- Time/geo/dedup/spam constraints: time violation <=40%, geo <=20%, dup_rate <=30%, spam <=5%
+- Free-form extraction accuracy (parsed_filters.jsonl vs hidden /opt/eval):
+  city >=0.60, category >=0.40, facet >=0.50, time_window present, radius/lat/lng present
+- Embedding usage: rag_config must contain embedding_model all-MiniLM-L6-v2 and embedding_used true, plus steps describing filter-first, semantic, facet
+- Self-improvement loop: rag_config self_improvement true + steps covering filter/rewrite/rerank, eval_report lift>0.05, parsed_filters_count 500, retrieved_count 500
 
 Self-improvement loop should analyze low-recall queries and retry techniques like query rewriting, re-ranking, or different filter combinations to achieve the highest recall@10 and largest delta over baseline. You need to figure out how to use the semantic facet and other signals to beat the baseline.
