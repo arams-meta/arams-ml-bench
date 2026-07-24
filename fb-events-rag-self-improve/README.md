@@ -3,13 +3,12 @@
 ## Description
 Self-improving RAG system with auto-eval loop for synthetic Facebook Events inventory.
 
-Agent gets 20k synthetic events (music, food, tech, etc.) with temporal, geo, category metadata, plus failure modes:
-- 10% past events (freshness filter required)
-- 31% near-duplicate clusters (dedup required)
+Agent gets 20k synthetic events with temporal, geo, category + semantic facet (topic) metadata plus failure modes:
+- 10% past events (freshness filter required, start>=2026-02-01)
+- 31% near-duplicate clusters (dedup required, 1 per cluster highest popularity)
 - 5% spam (filtering)
-- Geo scatter around city centers (radius filtering)
-
-Agent gets 20k synthetic events with semantic facet (topic) metadata - key signal:
+- Geo scatter around city centers (radius filtering, haversine)
+- Key signal: topic field (AI/Web3/Thai/Vegan/Crestline/etc) must match query facet for relevance (pop-only baseline ignores facet and fails ~0.27 recall)
 - topic field (AI/Web3/Thai/Vegan/Crestline/etc) must match query facet for relevance (pop-only baseline ignores facet and fails ~0.27 recall)
 - Relevance rule deterministic: city==, category if given, topic==facet, time window (query_date+phrase_offset ±20d fixed), haversine<=radius 50, not spam, start>=2026-02-01, dedup 1 per cluster highest pop, cap 30, guarantee >=1
 
