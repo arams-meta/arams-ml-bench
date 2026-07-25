@@ -130,69 +130,56 @@ def test_embedding_usage_proven():
         f"proves facet-aware filtering per instruction (facet is key signal)"
     )
 
-    # Semantic similarity behavioral proof: retrieved events should have higher cosine similarity to query than random events
-    # This proves embedding scoring was actually used, not just rule-based facet filter (which would have same facet-match but no semantic ranking)
-    # Uses baked MiniLM at /app/data/minilm + corpus_emb.npy precomputed at build
-    try:
-        from sentence_transformers import SentenceTransformer
-        import numpy as np
+    # Semantic similarity behavioral proof: retrieved must have higher cosine to query than random (proves embedding scoring, not just rule-based facet filter)
+    # Pure rule-based facet filter (city+category+facet+time/geo) would have 100% facet-match but same semantic similarity as random within facet
+    # Embedding rerank gives higher similarity
+    from sentence_transformers import SentenceTransformer
+    import numpy as np
 
-        model_path = "/app/data/minilm"
-        if os.path.exists(model_path):
-            model = SentenceTransformer(model_path)
-            # Load corpus embeddings and ids
-            corpus_emb = np.load("/app/data/corpus_emb.npy")
-            corpus_ids = json.loads(open("/app/data/corpus_ids.json").read())
-            id_to_idx = {eid: idx for idx, eid in enumerate(corpus_ids)}
-            # Sample 20 queries for speed
-            sample_qids = list(retrieved.keys())[:20]
-            sim_improved = []
-            sim_random = []
-            for qid in sample_qids:
-                # Query text from /app/data/queries.jsonl free-form
-                # Find query text
-                qtext = None
-                for qp in ["/app/data/queries.jsonl", "data/queries.jsonl"]:
-                    if os.path.exists(qp):
-                        with open(qp) as qf:
-                            for line in qf:
-                                obj = json.loads(line)
-                                if obj.get("id") == qid:
-                                    qtext = obj.get("text")
-                                    break
-                        if qtext:
+    model_path = "/app/data/minilm"
+    assert os.path.exists(model_path), "Baked MiniLM must exist for semantic proof"
+    model = SentenceTransformer(model_path)
+    corpus_emb = np.load("/app/data/corpus_emb.npy")
+    corpus_ids = json.loads(open("/app/data/corpus_ids.json").read())
+    id_to_idx = {eid: idx for idx, eid in enumerate(corpus_ids)}
+    sample_qids = list(retrieved.keys())[:20]
+    sim_improved = []
+    sim_random = []
+    for qid in sample_qids:
+        qtext = None
+        for qp in ["/app/data/queries.jsonl", "data/queries.jsonl"]:
+            if os.path.exists(qp):
+                with open(qp) as qf:
+                    for line in qf:
+                        obj = json.loads(line)
+                        if obj.get("id") == qid:
+                            qtext = obj.get("text")
                             break
-                if not qtext:
-                    continue
-                q_emb = model.encode(qtext, normalize_embeddings=True)
-                ret_ids = retrieved.get(qid, [])[:5]
-                for eid in ret_ids:
-                    idx = id_to_idx.get(eid)
-                    if idx is not None:
-                        sim = float(np.dot(q_emb, corpus_emb[idx]))
-                        sim_improved.append(sim)
-                # Random 5 events not retrieved
-                import random
+                if qtext:
+                    break
+        if not qtext:
+            continue
+        q_emb = model.encode(qtext, normalize_embeddings=True)
+        ret_ids = retrieved.get(qid, [])[:5]
+        for eid in ret_ids:
+            idx = id_to_idx.get(eid)
+            if idx is not None:
+                sim_improved.append(float(np.dot(q_emb, corpus_emb[idx])))
+        import random
 
-                random.seed(42)
-                all_valid_ids = [eid for eid in corpus_ids if eid not in ret_ids]
-                rand_ids = random.sample(all_valid_ids, min(5, len(all_valid_ids)))
-                for eid in rand_ids:
-                    idx = id_to_idx.get(eid)
-                    if idx is not None:
-                        sim = float(np.dot(q_emb, corpus_emb[idx]))
-                        sim_random.append(sim)
-            if sim_improved and sim_random:
-                avg_improved = sum(sim_improved) / len(sim_improved)
-                avg_random = sum(sim_random) / len(sim_random)
-                # Improved should have higher semantic similarity than random (embedding scoring)
-                assert avg_improved > avg_random, (
-                    f"Semantic similarity not higher: improved avg {avg_improved:.3f} <= random avg {avg_random:.3f} - must use embedding scoring"
-                )
-    except Exception as e:
-        # If model not available or fails, skip semantic check but facet-match + recall already prove embedding usage via filtering
-        # Don't fail test on model load failure, just log
-        print(f"Semantic similarity check skipped: {e}")
+        random.seed(42)
+        all_valid_ids = [eid for eid in corpus_ids if eid not in ret_ids]
+        rand_ids = random.sample(all_valid_ids, min(5, len(all_valid_ids)))
+        for eid in rand_ids:
+            idx = id_to_idx.get(eid)
+            if idx is not None:
+                sim_random.append(float(np.dot(q_emb, corpus_emb[idx])))
+    assert sim_improved and sim_random, "Semantic check needs retrieved and random"
+    avg_improved = sum(sim_improved) / len(sim_improved)
+    avg_random = sum(sim_random) / len(sim_random)
+    assert avg_improved > avg_random, (
+        f"Semantic similarity not higher: improved {avg_improved:.3f} <= random {avg_random:.3f} - must use MiniLM embedding scoring, not just rule-based facet filter"
+    )
 
     # Recompute recall independently from hidden ground truth vs retrieved (per spec: grader RECOMPUTES, not trusting eval_report floats)
     # Avoid trusting self-reported eval_report float which contradicts spec
