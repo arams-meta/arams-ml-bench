@@ -3,11 +3,12 @@
 set -uo pipefail
 mkdir -p /logs/verifier
 
-# Isolation: hidden present at build 700 root:root (full structured queries), made readable at test time for verifier via chmod
-# No inline generator that diverges from build-time generate_queries.py - hidden present at build so reward depends on 700 isolation
-# No generators in /opt/eval at solve time (only events+queries 700 root), so root at solve has only events+queries, no generate_*.py to reconstruct labels (defense-in-depth via USER + solve.sh root check that deletes if readable)
-chmod 755 /opt/eval 2>/dev/null || true
-chmod 644 /opt/eval/* 2>/dev/null || true
+# Isolation: hidden present at build 700 root:root (full structured queries), made readable at test time for verifier
+# No generators in /opt/eval - only events+queries 700 root at build (generators in /root 700 root not readable by agentuser after drop)
+# test.sh runs as root (no USER in Dockerfile) so chmod succeeds and hidden becomes readable for verifier tests
+# solve.sh enforces non-root via exec su agentuser and deletes hidden if readable at solve (defense-in-depth, no sudo)
+chmod 755 /opt/eval
+chmod 644 /opt/eval/*
 
 START_SEC=$(date +%s)
 

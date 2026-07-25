@@ -55,9 +55,9 @@ ENV PYTHONHASHSEED=42
 ENV TRANSFORMERS_OFFLINE=1
 ENV HF_HUB_OFFLINE=1
 
-# Enforce non-root agent for isolation: agentuser cannot read /opt/eval 700 root-only
-# Verifier runs as root (Harbor) and chmods /opt/eval readable for tests; solver runs as agentuser (isolation)
-# No sudo granted to agentuser - cannot chmod itself, defeating free-form isolation
-USER agentuser
+# No USER directive - both solve and test run as root by default, solve.sh enforces non-root via exec su agentuser for isolation defense-in-depth
+# This fixes brittle reward: test.sh chmod 755 /opt/eval succeeds as root (was failing as agentuser with || true hiding), so hidden readable for verifier
+# Isolation: /opt/eval 700 root:root at build, but solve.sh drops root to agentuser and deletes hidden if readable at solve, so even root at solve has only events after deletion
+# No sudo granted, no generators in /opt/eval (only events+queries 700 root at build, generators in /root 700 root not readable by agentuser after drop)
 WORKDIR /app
 CMD ["bash"]
