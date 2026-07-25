@@ -229,7 +229,7 @@ def get_filtered(ext, use_facet=True, use_time_geo=True):
     return list(cluster_best.values())+singles
 
 def get_filtered_multi_anchor(extracted):
-    """Union of 3 time windows around inventory anchors for holdout robustness - uses ±30d for +35d shifted holdout (train uses ±20d per instruction, holdout needs extra slack, time-constraint only tested on train)"""
+    """Union of 3 time windows around inventory anchors for holdout robustness - uses ±20d per instruction (not ±30d that exceeds hidden rule)"""
     if not extracted.get("city"):
         return []
     anchor_evs=extracted.get("_anchor_evs", [])
@@ -237,8 +237,8 @@ def get_filtered_multi_anchor(extracted):
         return get_filtered(extracted, use_facet=True, use_time_geo=True)
     merged={}
     for anchor in anchor_evs:
-        ws=(datetime.fromisoformat(anchor["start_time"]) - timedelta(days=30)).replace(hour=0,minute=0,second=0,microsecond=0)
-        we=(datetime.fromisoformat(anchor["start_time"]) + timedelta(days=30)).replace(hour=23,minute=59,second=0,microsecond=0)
+        ws=(datetime.fromisoformat(anchor["start_time"]) - timedelta(days=20)).replace(hour=0,minute=0,second=0,microsecond=0)
+        we=(datetime.fromisoformat(anchor["start_time"]) + timedelta(days=20)).replace(hour=23,minute=59,second=0,microsecond=0)
         temp={
             "city": extracted["city"],
             "facet": extracted.get("facet"),
@@ -488,20 +488,14 @@ if [ "$(id -u)" = "0" ]; then
   fi
 fi
 
-# Defense-in-depth: hidden structured queries present at build with 700 root, but at solve time they should NOT be readable
-# If running as root (or permissions changed), delete them to prevent rule-based cheating even if Harbor overrides USER
-# Tests will regenerate at test.sh if missing, so gold still passes - reward depends on build-time 700 + active deletion, not just runtime USER
+# Now running as agentuser - verify hidden not readable (defense-in-depth)
 if [ -r /opt/eval/queries.jsonl ]; then
-  echo "WARNING: hidden /opt/eval/queries.jsonl readable at solve time (running as root or chmod 755), removing for defense-in-depth to enforce free-form"
-  rm -f /opt/eval/queries.jsonl /opt/eval/holdout_queries.jsonl 2>/dev/null || true
-  chmod 000 /opt/eval 2>/dev/null || true
-fi
-# Also remove generators that could be used to reconstruct structured queries at solve time
-if [ -r /opt/eval/generate_queries.py ]; then
-  rm -f /opt/eval/generate_queries.py /opt/eval/generate_events.py 2>/dev/null || true
+  echo "ERROR: hidden /opt/eval/queries.jsonl readable at solve time - isolation broken!" >&2
+  ls -ld /opt/eval/ 2>&1
+  exit 1
 fi
 
-# Run oracle as current user (already agentuser after root check, no fallback to root)
+# Run oracle as current user (already agentuser, no fallback to root that undermines isolation)
 python3 /app/oracle_impl.py
 ls -lh /output/
 echo "Checking isolation: agentuser reading /opt/eval should fail..."

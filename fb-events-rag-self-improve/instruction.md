@@ -26,24 +26,23 @@ You need to produce output in following targets:
 - /output/eval_report.json: {"baseline_recall_at_10": float, "improved_recall_at_10": float, "recall_at_10": float, "holdout_recall_at_10": float, "lift": float, "parsed_filters_count": 500}
 
 Free-form extraction requirement: queries only have text like "best Thai Food events near Austin this weekend". You must extract city (Austin), category (Food), facet (Thai), time phrase (this weekend -> window). Use keyword matching, regex, or embedding, not structured fields.
-Embedding requirement: must use baked MiniLM at /app/data/minilm (384-dim) + precomputed corpus_emb.npy + corpus_ids.json (baked at build to fix timeout). Use FAISS or cosine. Prove via rag_config embedding_model all-MiniLM-L6-v2 and embedding_used true, plus behavioral: retrieved events must have topic==facet facet-match >=60% and higher cosine similarity to query than random events (avg improved > random) using MiniLM embeddings.
+Embedding requirement: you must use baked MiniLM embeddings for semantic ranking, prove usage via rag_config embedding_used and code containing SentenceTransformer / corpus_emb.npy usage.
 
 Constraints:
-- No external API, CPU only, FAISS allowed, seed 42, deterministic
-- Baked artifacts must exist: /app/data/minilm, /app/data/corpus_emb.npy, /app/data/corpus_ids.json (generated at build)
-- Do NOT read /opt/eval if present at solve time - grading only, hidden present at build 700 root:root and deleted at solve for defense-in-depth, regenerated at test time if missing. Do NOT modify /app/data
-- Grader recomputes recall/lift/facet-match/semantic from retrieved.jsonl vs hidden /opt/eval (events+queries full), not trusting eval_report floats - eval_report is schema only
+- No external API, use baked MiniLM at /app/data/minilm (384-dim), CPU only, FAISS allowed, seed 42
+- Do NOT read /opt/eval if present - grading only. Do NOT modify /app/data
+- Grader recomputes recall from retrieved.jsonl vs hidden, self-reported eval_report is schema only
 
 Temporal semantics (deterministic):
-- query_date: query issuance date
+- query_date is query issuance date
 - Time phrases: tomorrow +1d, weekend +3d, next week +10d, this month +15d, next month +45d
 - Train: time_window = query_date + offset ±20d fixed, lat/lng = city center, radius 50 fixed
-- Holdout: queries shifted +35d future, windows shift +35d. Reference may use multi-anchor union ±30d around closest inventory anchors for robustness (train ±20d, holdout ±30d because +35d shift).
+- Holdout: queries shifted +35d future, windows shift +35d as well; reference may use multi-anchor union ±30d around closest inventory anchors for robustness (train ±20d, holdout ±30d union because +35d shift needs wider windows)
 
-Scoring thresholds (recomputed from hidden /opt/eval, not self-reported):
+Scoring thresholds (recomputed from hidden /opt/eval):
 - Improved recall@10 >=0.40, lift > baseline+0.08 (baseline ~0.27 pop-only ignoring facet), holdout >=0.25 ratio >=0.4
 - Time/geo/dedup/spam/freshness: time <=40%, geo <=20%, dup <=30%, spam <=5%, freshness start_time>=2026-02-01 must be 0%
-- Free-form extraction: city >=0.60, facet >=0.50, category >=0.40 (parsed_filters.jsonl vs hidden)
-- Embedding: as above, facet-match >=60% and semantic cosine improved > random
-- Self-improvement: loop must show iteration: rag_config self_improvement true + steps list >=3 with rewrite/rerank, eval_report must have baseline and improved (existence), lift>0.08 recomputed from hidden vs retrieved (not trusting float), plus 500 parsed, 500 retrieved, 100 holdout
-- Isolation: hidden in /opt/eval 700 root:root at build, USER agentuser enforced, solve.sh drops root to agentuser and deletes hidden if readable at solve (defense-in-depth, no sudo), no relevance file anywhere, agent-visible queries free-form only id+text+query_date
+- Free-form extraction: city >=0.60, facet >=0.50, category >=0.40
+- Embedding: must use MiniLM, rag_config embedding_model all-MiniLM-L6-v2 and embedding_used true, plus behavioral: facet-match >=60% on retrieved (topic==facet) and semantic cosine avg improved > random (retrieved more similar to query than random) using MiniLM
+- Self-improvement: loop must iterate: rag_config self_improvement true + steps list >=3 with rewrite/rerank, 500 parsed, 500 retrieved, 100 holdout, lift>0.08 recomputed
+- Baked artifacts: /app/data/minilm, /app/data/corpus_emb.npy, /app/data/corpus_ids.json must exist

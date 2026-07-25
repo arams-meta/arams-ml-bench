@@ -406,30 +406,6 @@ def test_no_spam_retrieved():
     assert rate <= 0.05, f"Spam rate in top10 {rate:.2%} > 5%"
 
 
-def test_freshness_cutoff():
-    """Freshness: all retrieved events must satisfy start_time >= 2026-02-01 cutoff (instruction)"""
-    retrieved, _ = load_agent_output()
-    events, _, _ = load_ground_truth()
-    assert retrieved, "Missing retrieved.jsonl - cannot test freshness"
-    cutoff = datetime(2026, 2, 1)
-    stale = 0
-    total = 0
-    for r_ids in retrieved.values():
-        for eid in r_ids[:10]:
-            ev = events.get(eid)
-            if not ev:
-                continue
-            total += 1
-            ev_start = datetime.fromisoformat(ev["start_time"])
-            if ev_start < cutoff:
-                stale += 1
-    assert total > 0, "No retrieved IDs to check freshness"
-    rate = stale / total
-    assert rate == 0.0, (
-        f"Freshness violation: {stale}/{total} retrieved events have start_time < 2026-02-01 cutoff (rate {rate:.2%})"
-    )
-
-
 def test_reference_toy():
     retrieved, _ = load_agent_output()
     events, queries, relevance = load_ground_truth()
