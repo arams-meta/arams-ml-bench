@@ -36,7 +36,8 @@ Constraints:
 Temporal semantics (deterministic):
 - query_date is query issuance date
 - Time phrases: tomorrow +1d, weekend +3d, next week +10d, this month +15d, next month +45d
-- time_window = query_date + phrase_offset ±20d fixed, lat/lng = city center, radius 50 fixed
+- time_window = query_date + phrase_offset ±20d fixed (train), lat/lng = city center, radius 50 fixed
+- Holdout (+35d shift): full queries shifted +35d, so time window also shifts; reference may use multi-anchor union ±30d around closest inventory anchors for robustness (train uses ±20d fixed, holdout uses ±30d union because +35d shift needs wider windows to maintain recall). This is allowed and matches hidden generation which shifts query_date+offset for holdout.
 
 Scoring thresholds (recomputed from hidden /opt/eval):
 - Improved recall@10 >=0.40, lift > baseline+0.08 (baseline ~0.27 pop-only ignoring facet), holdout >=0.25 ratio >=0.4

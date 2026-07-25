@@ -73,34 +73,22 @@ def test_parsed_filters_exists_and_valid():
 
 
 def test_embedding_usage_proven():
-    """Prove MiniLM embedding search was actually used via behavioral facet-match + baked artifacts + recomputed recall"""
+    """Prove MiniLM embedding search was actually used via behavioral facet-match + recomputed recall (not just baked files)"""
     with open("/output/rag_config.json") as f:
         cfg = json.load(f)
-    blob_cfg = json.dumps(cfg).lower()
-    # Config must declare model and usage - stated requirement in instruction: must use baked MiniLM at /app/data/minilm
-    assert (
-        cfg.get("embedding_model") == "all-MiniLM-L6-v2"
-        or "all-minilm-l6-v2" in blob_cfg
-    ), (
-        "rag_config must declare embedding_model exactly all-MiniLM-L6-v2 - stated in instruction"
+    # Config must declare exact model and boolean true - not just keyword substring (fixes keyword-grep gate string-matchable)
+    assert cfg.get("embedding_model") == "all-MiniLM-L6-v2", (
+        "rag_config must declare embedding_model exactly all-MiniLM-L6-v2 - exact match, not substring"
     )
     assert cfg.get("embedding_used") is True, (
-        "rag_config must declare embedding_used true boolean - stated requirement"
+        "rag_config embedding_used must be true boolean"
     )
-    assert "minilm" in blob_cfg, "rag_config must mention minilm - stated requirement"
-    assert any(kw in blob_cfg for kw in ["filter-first", "semantic", "facet"]), (
-        "rag_config must describe filter-first semantic facet method - stated in instruction"
+    assert cfg.get("self_improvement") is True, (
+        "rag_config self_improvement must be true"
     )
-    # Baked artifacts must exist (proves offline model usage, not API) - build generates these
-    assert os.path.exists("/app/data/minilm") or os.path.exists(
-        "/app/data/minilm/config.json"
-    ), (
-        "Baked MiniLM model at /app/data/minilm must exist - proves offline embedding usage per Dockerfile"
-    )
-    assert os.path.exists("/app/data/corpus_emb.npy"), (
-        "Precomputed corpus_emb.npy must exist - proves embedding precompute at build to fix timeout"
-    )
-    assert os.path.exists("/app/data/corpus_ids.json"), "corpus_ids.json must exist"
+    # Baked artifacts existence is checked in test_app_data_not_modified, not here, to avoid 'only checks build-baked files' (behavioral proof here)
+    # Keep minimal existence for offline proof but not as sole gate
+    assert os.path.exists("/app/data/corpus_emb.npy"), "corpus_emb.npy must exist"
 
     # Load events and retrieved for behavioral proof (recomputed, not trusting eval_report floats per spec)
     events_paths = ["/opt/eval/events.jsonl", "/app/data/events.jsonl"]
@@ -243,8 +231,15 @@ def test_self_improvement_loop_proven():
         cfg = json.load(f)
     with open("/output/eval_report.json") as f:
         rep = json.load(f)
-    assert cfg.get("self_improvement"), "rag_config must have self_improvement: true"
-    blob = json.dumps(cfg).lower() + json.dumps(rep).lower()
+    assert cfg.get("self_improvement") is True, (
+        "rag_config self_improvement must be true boolean"
+    )
+    # Steps must be list with >=3 items describing method, not just keyword substring in blob (fixes string-matchable gate)
+    steps = cfg.get("steps", [])
+    assert isinstance(steps, list) and len(steps) >= 3, (
+        f"rag_config steps must be list with >=3 items, got {steps}"
+    )
+    # Check that steps contain improvement techniques as explicit list items, not just substring anywhere
     techniques = [
         "filter",
         "rewrite",
@@ -254,10 +249,14 @@ def test_self_improvement_loop_proven():
         "semantic",
         "extract",
     ]
-    matches = sum(1 for t in techniques if t in blob)
-    assert matches >= 3, f"Should describe >=3 improvement techniques, got {matches}"
+    # Count technique keywords that appear in steps list items (not whole blob)
+    steps_blob = " ".join(str(s).lower() for s in steps)
+    matches = sum(1 for t in techniques if t in steps_blob)
+    assert matches >= 3, (
+        f"rag_config steps must describe >=3 techniques {techniques}, got {matches} in {steps}"
+    )
     assert "lift" in rep or "baseline_recall_at_10" in rep, (
-        "eval_report must contain lift/baseline from self-eval loop"
+        "eval_report must contain lift/baseline"
     )
 
     # Recompute lift independently from hidden ground truth vs retrieved (per spec: grader recomputes, not trusting eval_report float)

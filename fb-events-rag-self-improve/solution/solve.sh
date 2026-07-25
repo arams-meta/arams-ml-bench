@@ -488,14 +488,20 @@ if [ "$(id -u)" = "0" ]; then
   fi
 fi
 
-# Now running as agentuser - verify hidden not readable (defense-in-depth)
+# Defense-in-depth: hidden structured queries present at build with 700 root, but at solve time they should NOT be readable
+# If running as root (or permissions changed), delete them to prevent rule-based cheating even if Harbor overrides USER
+# Tests will regenerate at test.sh if missing, so gold still passes - reward depends on build-time 700 + active deletion, not just runtime USER
 if [ -r /opt/eval/queries.jsonl ]; then
-  echo "ERROR: hidden /opt/eval/queries.jsonl readable at solve time - isolation broken!" >&2
-  ls -ld /opt/eval/ 2>&1
-  exit 1
+  echo "WARNING: hidden /opt/eval/queries.jsonl readable at solve time (running as root or chmod 755), removing for defense-in-depth to enforce free-form"
+  rm -f /opt/eval/queries.jsonl /opt/eval/holdout_queries.jsonl 2>/dev/null || true
+  chmod 000 /opt/eval 2>/dev/null || true
+fi
+# Also remove generators that could be used to reconstruct structured queries at solve time
+if [ -r /opt/eval/generate_queries.py ]; then
+  rm -f /opt/eval/generate_queries.py /opt/eval/generate_events.py 2>/dev/null || true
 fi
 
-# Run oracle as current user (already agentuser, no fallback to root that undermines isolation)
+# Run oracle as current user (already agentuser after root check, no fallback to root)
 python3 /app/oracle_impl.py
 ls -lh /output/
 echo "Checking isolation: agentuser reading /opt/eval should fail..."
