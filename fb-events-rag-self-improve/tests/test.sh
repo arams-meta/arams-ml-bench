@@ -3,11 +3,11 @@
 set -uo pipefail
 mkdir -p /logs/verifier
 
-# Isolation: /opt/eval is chmod 700 root:root at build (hidden structured queries with city/facet/time)
-# Agentuser cannot read 700 root-only during solve (Dockerfile USER agentuser). For verifier, make readable.
-# Hidden is present at build (defense-in-depth via USER + root check in solve.sh), not generated at verify time, so reward depends on build-time isolation
-chmod 755 /opt/eval 2>/dev/null || true
-chmod 644 /opt/eval/* 2>/dev/null || true
+# Isolation: hidden 700 root:root at build in verifier image (tests/Dockerfile) - present at build so reward depends on 700 isolation
+# Agent image (environment/Dockerfile) has NO /opt/eval hidden at all (only free-form), so even root at solve has no structured queries (defense-in-depth via separate containers)
+# Verifier runs as root in separate mode (tests/Dockerfile has no USER), so chmod succeeds to make hidden readable for tests
+chmod 755 /opt/eval
+chmod 644 /opt/eval/*
 
 START_SEC=$(date +%s)
 
