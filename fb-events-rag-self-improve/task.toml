@@ -1,7 +1,7 @@
 version = "1.0"
 
 [task]
-name = "arams/fb-events-rag-self-improve"
+name = "codimango/fb-events-rag-self-improve"
 description = "Self-improving RAG with auto-eval loop for Facebook Events inventory"
 authors = [{ name = "Aram", email = "arams@meta.com" }]
 keywords = ["ml", "llm", "rag", "retrieval", "self-improvement", "evaluation", "events"]

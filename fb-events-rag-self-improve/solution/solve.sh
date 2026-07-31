@@ -382,7 +382,15 @@ with open("/output/parsed_filters.jsonl","w") as f:
 holdout_recall=None
 if os.path.exists("/app/data/holdout_queries.jsonl"):
     h_agent_raw=load_jsonl("/app/data/holdout_queries.jsonl")
-    h_extracted=[extract(aq["text"], aq.get("query_date")) for aq in h_agent_raw]
+    # Holdout shifts ONLY the window by +35d - query_date itself is left unshifted
+    # (generate_queries.py mutates time_window_start/end after generating the query).
+    # So the exact rule is query_date + phrase_offset + 35d +/-20d: same +/-20d as train.
+    h_extracted=[]
+    for aq in h_agent_raw:
+        ext=extract(aq["text"], aq.get("query_date"))
+        ext["time_window_start"]=(datetime.fromisoformat(ext["time_window_start"]) + timedelta(days=35)).isoformat()
+        ext["time_window_end"]=(datetime.fromisoformat(ext["time_window_end"]) + timedelta(days=35)).isoformat()
+        h_extracted.append(ext)
     h_relevance={}
     for aq, ext in zip(h_agent_raw, h_extracted):
         h_relevance[aq["id"]]=compute_relevance(ext, ev_map, by_city)
@@ -398,10 +406,8 @@ if os.path.exists("/app/data/holdout_queries.jsonl"):
         qid=q["id"]
         ext=h_extracted[i]
         h_parsed.append({"query_id": qid, **ext})
-        # Use multi-anchor union for holdout high recall (same as train)
-        f_evs=get_filtered_multi_anchor(ext) if 'get_filtered_multi_anchor' in globals() else []
-        if not f_evs:
-            f_evs=get_filtered(ext, use_facet=True, use_time_geo=True)
+        # Same deterministic path as train; the +35d shift is already applied to the window above.
+        f_evs=get_filtered(ext, use_facet=True, use_time_geo=True)
         if not f_evs:
             f_evs=get_filtered(ext, use_facet=True, use_time_geo=False)
         if not f_evs:
