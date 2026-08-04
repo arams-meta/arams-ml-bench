@@ -16,7 +16,7 @@ COPY environment/references/ /tmp/build_refs/
 
 # Generate hidden ground truth for verifier (same seed 42) - full structured queries + events, no relevance file
 # This image is separate from agent image, so even if agent runs as root, it has no /opt/eval at all in its container
-RUN python3 /tmp/build_refs/generate_events.py --n 20000 --seed 42 --out /opt/eval/events.jsonl && \
+RUN python3 /tmp/build_refs/generate_events.py --n 10000 --seed 42 --out /opt/eval/events.jsonl && \
     python3 /tmp/build_refs/generate_queries.py --events /opt/eval/events.jsonl --n 500 --seed 42 --out-queries /opt/eval/queries.jsonl --out-rel /tmp/relevance.jsonl --out-holdout-queries /opt/eval/holdout_queries.jsonl --out-holdout-rel /tmp/holdout_relevance.jsonl --holdout-n 100 && \
     cp /opt/eval/events.jsonl /app/data/events.jsonl && \
     python3 -c "import json; f='/opt/eval/queries.jsonl'; o='/app/data/queries.jsonl'; open(o,'w').write(''.join(json.dumps({'id': json.loads(l)['id'], 'text': json.loads(l)['text'], 'query_date': json.loads(l)['query_date']})+'\n' for l in open(f))); f='/opt/eval/holdout_queries.jsonl'; o='/app/data/holdout_queries.jsonl'; open(o,'w').write(''.join(json.dumps({'id': json.loads(l)['id'], 'text': json.loads(l)['text'], 'query_date': json.loads(l)['query_date']})+'\n' for l in open(f))); print('Verifier has hidden + free-form')" && \
