@@ -1,0 +1,46 @@
+[
+  {
+    "id": "toy_001_good",
+    "user_question": "Tech events in New York next month",
+    "query_filters": {
+      "city": "New York",
+      "category": "Tech"
+    },
+    "agent_answer": "Here are Tech events in New York: AI Summit at Javits Center on 2026-06-05, Startup Pitch at Brooklyn Hub on 2026-06-06. Both within your time window, deduped, no spam.",
+    "ground_truth_ids": [
+      "evt_0001",
+      "evt_0002"
+    ],
+    "flaw_type": "none",
+    "human_score": 5,
+    "category": "good"
+  },
+  {
+    "id": "toy_002_bad_halluc",
+    "user_question": "Tech events in New York next month",
+    "query_filters": {
+      "city": "New York",
+      "category": "Tech"
+    },
+    "agent_answer": "Here are events: Secret Underground Rave in Los Angeles (not in inventory, hallucinated) and AI Summit in New York. Also Goa Psytrance in Berlin (wrong city, not in events.jsonl).",
+    "ground_truth_ids": [
+      "evt_0001"
+    ],
+    "flaw_type": "hallucination",
+    "human_score": 1,
+    "category": "bad"
+  },
+  {
+    "id": "toy_003_bad_spam",
+    "user_question": "Music events in SF this weekend",
+    "query_filters": {
+      "city": "San Francisco",
+      "category": "Music"
+    },
+    "agent_answer": "Music events: Weekend Soccer League at Market Square Portland (wrong city) and again Weekend Soccer League (Official) same cluster_0 duplicate not deduped. Includes spam event.",
+    "ground_truth_ids": [],
+    "flaw_type": "spam",
+    "human_score": 2,
+    "category": "bad"
+  }
+]
