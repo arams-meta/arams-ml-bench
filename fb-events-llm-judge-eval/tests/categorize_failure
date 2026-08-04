@@ -1,0 +1,29 @@
+#!/usr/bin/env python3
+import sys
+path = sys.argv[1] if len(sys.argv) > 1 else "/logs/verifier/stderr.txt"
+try:
+    with open(path) as f:
+        content = f.read().lower()
+except:
+    content = ""
+
+if "memoryerror" in content or "killed" in content or "oom" in content:
+    print("oom")
+elif "modulenotfounderror" in content or "no module named" in content:
+    print("dependency_error")
+elif "filenotfounderror" in content or "no such file" in content:
+    print("pipeline_broken")
+elif "score" in content and "1-5" in content:
+    print("schema_violation")
+elif "correlation" in content or "margin" in content:
+    print("tolerance_miss")
+elif "directional" in content or "good should beat bad" in content:
+    print("directional_miss")
+elif "hallucinated" in content or "faithfulness" in content:
+    print("reference_mismatch")
+elif "hardcoded" in content:
+    print("score_gaming")
+elif "assert" in content:
+    print("tolerance_miss")
+else:
+    print("unknown")

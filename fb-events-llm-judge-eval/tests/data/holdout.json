@@ -1,0 +1,468 @@
+[
+  {
+    "id": "q_00029_good",
+    "query_id": "q_00029",
+    "user_question": "best Nightlife events near Chicago this weekend",
+    "query_filters": {
+      "city": "Chicago",
+      "category": "Nightlife",
+      "time_window_start": "2026-04-15T00:00:00",
+      "time_window_end": "2026-04-16T23:59:00",
+      "radius_km": 10,
+      "lat": 41.870228,
+      "lng": -87.633437
+    },
+    "agent_answer": "No Nightlife events found in Chicago for your dates 2026-04-15T00:00:00 to 2026-04-16T23:59:00. Try expanding radius (current 10km) or category.",
+    "ground_truth_ids": [],
+    "flaw_type": "none",
+    "human_score": 5,
+    "category": "good"
+  },
+  {
+    "id": "q_00064_bad_wrong_time",
+    "query_id": "q_00064",
+    "user_question": "weekend Nightlife in Los Angeles",
+    "query_filters": {
+      "city": "Los Angeles",
+      "category": "Nightlife",
+      "time_window_start": "2026-05-25T00:00:00",
+      "time_window_end": "2026-05-29T23:59:00",
+      "radius_km": 30,
+      "lat": 34.078162,
+      "lng": -118.232471
+    },
+    "agent_answer": "For query 'weekend Nightlife in Los Angeles' with window 2026-05-25T00:00:00 to 2026-05-29T23:59:00 in Los Angeles, recommending event from 2025-01-01 (outside time window) and event in 2027 (far future). Ignores time filter: filter_adherence fail.",
+    "ground_truth_ids": [
+      "evt_000390",
+      "evt_002622",
+      "evt_003148",
+      "evt_003318",
+      "evt_013526"
+    ],
+    "flaw_type": "wrong_time",
+    "human_score": 2,
+    "category": "bad"
+  },
+  {
+    "id": "q_00077_good",
+    "query_id": "q_00077",
+    "user_question": "what's happening in New York next month",
+    "query_filters": {
+      "city": "New York",
+      "category": "Arts",
+      "time_window_start": "2026-05-18T00:00:00",
+      "time_window_end": "2026-05-23T23:59:00",
+      "radius_km": 35,
+      "lat": 40.767994,
+      "lng": -74.077773
+    },
+    "agent_answer": "Here are Arts events near New York matching 'what's happening in New York next month': Film Screening Workshop: Civic Auditorium Showcase at Civic Auditorium in New York on 2026-05-23; Film Screening Meetup: City Hall Showcase at City Hall in New York on 2026-05-22; Painting Night Market at City Hall in New York on 2026-05-20. All within your time window and deduped.",
+    "ground_truth_ids": [
+      "evt_005582",
+      "evt_008796",
+      "evt_011911",
+      "evt_011951",
+      "evt_019271"
+    ],
+    "flaw_type": "none",
+    "human_score": 5,
+    "category": "good"
+  },
+  {
+    "id": "q_00003_bad_spam",
+    "query_id": "q_00003",
+    "user_question": "best Tech events near Atlanta next month",
+    "query_filters": {
+      "city": "Atlanta",
+      "category": "Tech",
+      "time_window_start": "2026-05-19T00:00:00",
+      "time_window_end": "2026-05-23T23:59:00",
+      "radius_km": 15,
+      "lat": 33.758123,
+      "lng": -84.351841
+    },
+    "agent_answer": "Music events: AI Summit - Atlanta at Tech Hub and duplicate Weekend Running League at Union Hall (same cluster_id None not deduped, should be deduped). Also includes spam flagged event (is_spam=true) which should be excluded.",
+    "ground_truth_ids": [
+      "evt_000831",
+      "evt_000930",
+      "evt_017307",
+      "evt_018642"
+    ],
+    "flaw_type": "spam",
+    "human_score": 2,
+    "category": "bad"
+  },
+  {
+    "id": "q_00071_good",
+    "query_id": "q_00071",
+    "user_question": "what's happening in Philadelphia next week",
+    "query_filters": {
+      "city": "Philadelphia",
+      "category": "Community",
+      "time_window_start": "2026-03-28T00:00:00",
+      "time_window_end": "2026-04-02T23:59:00",
+      "radius_km": 30,
+      "lat": 40.00941,
+      "lng": -75.141918
+    },
+    "agent_answer": "Here are Community events near Philadelphia matching 'what's happening in Philadelphia next week': Neighborhood Potluck - Grand Theater at Grand Theater in Philadelphia on 2026-04-02; Neighborhood Potluck - Grand Theater (Official) at Grand Theater in Philadelphia on 2026-04-02; Neighborhood Potluck - Grand Theater 2026 at Grand Theater in Philadelphia on 2026-04-02. All within your time window and deduped.",
+    "ground_truth_ids": [
+      "evt_007843",
+      "evt_007844",
+      "evt_007845",
+      "evt_013975",
+      "evt_016075"
+    ],
+    "flaw_type": "none",
+    "human_score": 5,
+    "category": "good"
+  },
+  {
+    "id": "q_00025_bad_hallucination",
+    "query_id": "q_00025",
+    "user_question": "things to do next month in Seattle",
+    "query_filters": {
+      "city": "Seattle",
+      "category": "Nightlife",
+      "time_window_start": "2026-04-23T00:00:00",
+      "time_window_end": "2026-04-28T23:59:00",
+      "radius_km": 25,
+      "lat": 47.612224,
+      "lng": -122.347064
+    },
+    "agent_answer": "Found events: Rooftop Party - Warehouse 22 in Seattle and also Secret Underground Rave at Hidden Bunker - Exclusive Invite Only in Los Angeles (this event does NOT exist in inventory, hallucinated) plus another event in Berlin. This violates faithfulness - includes events not in events.jsonl and wrong city.",
+    "ground_truth_ids": [
+      "evt_001702",
+      "evt_004479",
+      "evt_004480",
+      "evt_010327",
+      "evt_011976"
+    ],
+    "flaw_type": "hallucination",
+    "human_score": 1,
+    "category": "bad"
+  },
+  {
+    "id": "q_00091_good",
+    "query_id": "q_00091",
+    "user_question": "what's happening in Denver next month",
+    "query_filters": {
+      "city": "Denver",
+      "category": "Nightlife",
+      "time_window_start": "2026-05-26T00:00:00",
+      "time_window_end": "2026-05-28T23:59:00",
+      "radius_km": 35,
+      "lat": 39.715046,
+      "lng": -104.9344
+    },
+    "agent_answer": "No Nightlife events found in Denver for your dates 2026-05-26T00:00:00 to 2026-05-28T23:59:00. Try expanding radius (current 35km) or category.",
+    "ground_truth_ids": [],
+    "flaw_type": "none",
+    "human_score": 5,
+    "category": "good"
+  },
+  {
+    "id": "q_00083_bad_wrong_time",
+    "query_id": "q_00083",
+    "user_question": "what's happening in Portland next month",
+    "query_filters": {
+      "city": "Portland",
+      "category": "Music",
+      "time_window_start": "2026-07-04T00:00:00",
+      "time_window_end": "2026-07-06T23:59:00",
+      "radius_km": 12,
+      "lat": 45.45786,
+      "lng": -122.689337
+    },
+    "agent_answer": "For query 'what's happening in Portland next month' with window 2026-07-04T00:00:00 to 2026-07-06T23:59:00 in Portland, recommending event from 2025-01-01 (outside time window) and event in 2027 (far future). Ignores time filter: filter_adherence fail.",
+    "ground_truth_ids": [
+      "evt_010240",
+      "evt_010242",
+      "evt_016761"
+    ],
+    "flaw_type": "wrong_time",
+    "human_score": 2,
+    "category": "bad"
+  },
+  {
+    "id": "q_00089_good",
+    "query_id": "q_00089",
+    "user_question": "festival in Atlanta next month",
+    "query_filters": {
+      "city": "Atlanta",
+      "category": "Arts",
+      "time_window_start": "2026-07-14T00:00:00",
+      "time_window_end": "2026-07-18T23:59:00",
+      "radius_km": 8,
+      "lat": 33.767943,
+      "lng": -84.405708
+    },
+    "agent_answer": "Here are Arts events near Atlanta matching 'festival in Atlanta next month': Photography Expo: Community Center Showcase at Community Center in Atlanta on 2026-07-15; Atlanta Painting Walk at Market Square in Atlanta on 2026-07-18; Film Screening Night Market at Central Park in Atlanta on 2026-07-18. All within your time window and deduped.",
+    "ground_truth_ids": [
+      "evt_015872",
+      "evt_017050",
+      "evt_018687"
+    ],
+    "flaw_type": "none",
+    "human_score": 5,
+    "category": "good"
+  },
+  {
+    "id": "q_00069_bad_spam",
+    "query_id": "q_00069",
+    "user_question": "what's happening in Seattle next month",
+    "query_filters": {
+      "city": "Seattle",
+      "category": "Nightlife",
+      "time_window_start": "2026-06-10T00:00:00",
+      "time_window_end": "2026-06-15T23:59:00",
+      "radius_km": 20,
+      "lat": 47.586092,
+      "lng": -122.327279
+    },
+    "agent_answer": "Music events: Rooftop Party - Central Park at Central Park and duplicate Weekend Running League at Union Hall (same cluster_id None not deduped, should be deduped). Also includes spam flagged event (is_spam=true) which should be excluded.",
+    "ground_truth_ids": [
+      "evt_005442",
+      "evt_009097",
+      "evt_009098",
+      "evt_009099",
+      "evt_012229"
+    ],
+    "flaw_type": "spam",
+    "human_score": 2,
+    "category": "bad"
+  },
+  {
+    "id": "q_00053_good",
+    "query_id": "q_00053",
+    "user_question": "Music workshop next month Chicago",
+    "query_filters": {
+      "city": "Chicago",
+      "category": "Music",
+      "time_window_start": "2026-06-30T00:00:00",
+      "time_window_end": "2026-07-03T23:59:00",
+      "radius_km": 15,
+      "lat": 41.915325,
+      "lng": -87.614914
+    },
+    "agent_answer": "Here are Music events near Chicago matching 'Music workshop next month Chicago': Neon Harbor Concert - Chicago Nights at Riverside Hall in Chicago on 2026-07-02; Juniper Jones Concert - Chicago Nights at Harbor View in Chicago on 2026-07-03; Ava Rhodes Concert - Chicago Nights at City Hall in Chicago on 2026-07-02. All within your time window and deduped.",
+    "ground_truth_ids": [
+      "evt_000435",
+      "evt_008043",
+      "evt_015265",
+      "evt_018493",
+      "evt_019698"
+    ],
+    "flaw_type": "none",
+    "human_score": 5,
+    "category": "good"
+  },
+  {
+    "id": "q_00028_bad_wrong_time",
+    "query_id": "q_00028",
+    "user_question": "best Business events near Philadelphia next month",
+    "query_filters": {
+      "city": "Philadelphia",
+      "category": "Business",
+      "time_window_start": "2026-08-24T00:00:00",
+      "time_window_end": "2026-08-28T23:59:00",
+      "radius_km": 25,
+      "lat": 39.967591,
+      "lng": -75.125438
+    },
+    "agent_answer": "For query 'best Business events near Philadelphia next month' with window 2026-08-24T00:00:00 to 2026-08-28T23:59:00 in Philadelphia, recommending event from 2025-01-01 (outside time window) and event in 2027 (far future). Ignores time filter: filter_adherence fail.",
+    "ground_truth_ids": [],
+    "flaw_type": "wrong_time",
+    "human_score": 2,
+    "category": "bad"
+  },
+  {
+    "id": "q_00057_good",
+    "query_id": "q_00057",
+    "user_question": "best Tech events near Atlanta this weekend",
+    "query_filters": {
+      "city": "Atlanta",
+      "category": "Tech",
+      "time_window_start": "2026-03-24T00:00:00",
+      "time_window_end": "2026-03-27T23:59:00",
+      "radius_km": 20,
+      "lat": 33.784374,
+      "lng": -84.358593
+    },
+    "agent_answer": "Here are Tech events near Atlanta matching 'best Tech events near Atlanta this weekend': Data Engineering Summit - Atlanta at Skyline Rooftop in Atlanta on 2026-03-25; Cybersecurity Demo Night at Market Square in Atlanta on 2026-03-24; AI Meetup: Demo Night at Tech Hub at Tech Hub in Atlanta on 2026-03-27. All within your time window and deduped.",
+    "ground_truth_ids": [
+      "evt_004763",
+      "evt_006373",
+      "evt_008849",
+      "evt_014398",
+      "evt_016948"
+    ],
+    "flaw_type": "none",
+    "human_score": 5,
+    "category": "good"
+  },
+  {
+    "id": "q_00075_bad_hallucination",
+    "query_id": "q_00075",
+    "user_question": "things to do next month in Boston",
+    "query_filters": {
+      "city": "Boston",
+      "category": "Arts",
+      "time_window_start": "2026-07-24T00:00:00",
+      "time_window_end": "2026-07-31T23:59:00",
+      "radius_km": 12,
+      "lat": 42.436363,
+      "lng": -71.043356
+    },
+    "agent_answer": "Found events: Photography Expo: Central Park Showcase in Boston and also Secret Underground Rave at Hidden Bunker - Exclusive Invite Only in Los Angeles (this event does NOT exist in inventory, hallucinated) plus another event in Berlin. This violates faithfulness - includes events not in events.jsonl and wrong city.",
+    "ground_truth_ids": [
+      "evt_004910",
+      "evt_010301",
+      "evt_010592",
+      "evt_011874",
+      "evt_016063"
+    ],
+    "flaw_type": "hallucination",
+    "human_score": 1,
+    "category": "bad"
+  },
+  {
+    "id": "q_00035_good",
+    "query_id": "q_00035",
+    "user_question": "things to do next month in Philadelphia",
+    "query_filters": {
+      "city": "Philadelphia",
+      "category": "Nightlife",
+      "time_window_start": "2026-07-02T00:00:00",
+      "time_window_end": "2026-07-07T23:59:00",
+      "radius_km": 20,
+      "lat": 39.929132,
+      "lng": -75.159131
+    },
+    "agent_answer": "Here are Nightlife events near Philadelphia matching 'things to do next month in Philadelphia': Philadelphia Nightlife Crawl @ City Hall at City Hall in Philadelphia on 2026-07-03; Rooftop Party - Grand Theater at Grand Theater in Philadelphia on 2026-07-02; DJ Night at Riverside Hall at Riverside Hall in Philadelphia on 2026-07-05. All within your time window and deduped.",
+    "ground_truth_ids": [
+      "evt_004934",
+      "evt_005811",
+      "evt_007569",
+      "evt_009237",
+      "evt_019727"
+    ],
+    "flaw_type": "none",
+    "human_score": 5,
+    "category": "good"
+  },
+  {
+    "id": "q_00000_bad_spam",
+    "query_id": "q_00000",
+    "user_question": "showcase in Portland next week",
+    "query_filters": {
+      "city": "Portland",
+      "category": "Tech",
+      "time_window_start": "2026-04-05T00:00:00",
+      "time_window_end": "2026-04-07T23:59:00",
+      "radius_km": 20,
+      "lat": 45.516312,
+      "lng": -122.745791
+    },
+    "agent_answer": "Music events: Cloud Native Demo Night at City Hall and duplicate Weekend Running League at Union Hall (same cluster_id None not deduped, should be deduped). Also includes spam flagged event (is_spam=true) which should be excluded.",
+    "ground_truth_ids": [
+      "evt_001488"
+    ],
+    "flaw_type": "spam",
+    "human_score": 2,
+    "category": "bad"
+  },
+  {
+    "id": "q_00097_good",
+    "query_id": "q_00097",
+    "user_question": "things to do next month in Miami",
+    "query_filters": {
+      "city": "Miami",
+      "category": "Music",
+      "time_window_start": "2026-05-07T00:00:00",
+      "time_window_end": "2026-05-13T23:59:00",
+      "radius_km": 25,
+      "lat": 25.742967,
+      "lng": -80.245008
+    },
+    "agent_answer": "Here are Music events near Miami matching 'things to do next month in Miami': Acoustic Evening with Blue Violet at Central Park in Miami on 2026-05-13; Ava Rhodes Concert - Miami Nights at Central Park in Miami on 2026-05-12; Acoustic Evening with Neon Harbor at Civic Auditorium in Miami on 2026-05-10. All within your time window and deduped.",
+    "ground_truth_ids": [
+      "evt_002104",
+      "evt_003700",
+      "evt_003782",
+      "evt_004290",
+      "evt_006759"
+    ],
+    "flaw_type": "none",
+    "human_score": 5,
+    "category": "good"
+  },
+  {
+    "id": "q_00020_bad_hallucination",
+    "query_id": "q_00020",
+    "user_question": "weekend Arts in Miami",
+    "query_filters": {
+      "city": "Miami",
+      "category": "Arts",
+      "time_window_start": "2026-05-23T00:00:00",
+      "time_window_end": "2026-05-29T23:59:00",
+      "radius_km": 8,
+      "lat": 25.733304,
+      "lng": -80.234836
+    },
+    "agent_answer": "Found events: Miami Film Screening Walk in Miami and also Secret Underground Rave at Hidden Bunker - Exclusive Invite Only in Los Angeles (this event does NOT exist in inventory, hallucinated) plus another event in Berlin. This violates faithfulness - includes events not in events.jsonl and wrong city.",
+    "ground_truth_ids": [
+      "evt_004505",
+      "evt_009442",
+      "evt_012570",
+      "evt_013255"
+    ],
+    "flaw_type": "hallucination",
+    "human_score": 1,
+    "category": "bad"
+  },
+  {
+    "id": "q_00054_good",
+    "query_id": "q_00054",
+    "user_question": "Nightlife market tomorrow San Francisco",
+    "query_filters": {
+      "city": "San Francisco",
+      "category": "Nightlife",
+      "time_window_start": "2026-04-04T00:00:00",
+      "time_window_end": "2026-04-04T23:59:00",
+      "radius_km": 50,
+      "lat": 37.829414,
+      "lng": -122.472456
+    },
+    "agent_answer": "No Nightlife events found in San Francisco for your dates 2026-04-04T00:00:00 to 2026-04-04T23:59:00. Try expanding radius (current 50km) or category.",
+    "ground_truth_ids": [],
+    "flaw_type": "none",
+    "human_score": 5,
+    "category": "good"
+  },
+  {
+    "id": "q_00043_bad_wrong_time",
+    "query_id": "q_00043",
+    "user_question": "Sports events this weekend in Miami",
+    "query_filters": {
+      "city": "Miami",
+      "category": "Sports",
+      "time_window_start": "2026-03-24T00:00:00",
+      "time_window_end": "2026-03-30T23:59:00",
+      "radius_km": 20,
+      "lat": 25.738057,
+      "lng": -80.231905
+    },
+    "agent_answer": "For query 'Sports events this weekend in Miami' with window 2026-03-24T00:00:00 to 2026-03-30T23:59:00 in Miami, recommending event from 2025-01-01 (outside time window) and event in 2027 (far future). Ignores time filter: filter_adherence fail.",
+    "ground_truth_ids": [
+      "evt_000724",
+      "evt_001917",
+      "evt_004029",
+      "evt_004448",
+      "evt_005821"
+    ],
+    "flaw_type": "wrong_time",
+    "human_score": 2,
+    "category": "bad"
+  }
+]

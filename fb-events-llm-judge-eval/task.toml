@@ -1,0 +1,37 @@
+version = "1.0"
+
+[task]
+name = "codimango/fb-events-llm-judge-eval"
+description = "LLM-as-a-judge eval framework for FB Events agent answers - judges faithfulness, filter adherence, spam/dedup"
+authors = [{ name = "Aram", email = "arams@meta.com" }]
+keywords = ["ml", "llm", "llm-as-judge", "eval", "facebook-events"]
+format = "ml_bench_single_turn"
+workstream = "llm_research"
+
+[metadata]
+author_name = "Aram"
+author_email = "arams@meta.com"
+difficulty = "medium"
+languages = ["python"]
+category_usecase = "model_domain"
+category_subdomain = "machine_learning"
+reward_type = "binary"
+tags = ["ml", "ml-bench", "llm-research", "llm-judge", "fb-events", "eval"]
+expert_time_estimate_min = 20.0
+junior_time_estimate_min = 60.0
+seed = 42
+deterministic = true
+
+[verifier]
+timeout_sec = 1800.0
+
+[agent]
+timeout_sec = 1200.0
+
+[environment]
+build_timeout_sec = 900.0
+cpus = 2
+memory_mb = 12288
+storage_mb = 10240
+gpus = 0
+allow_internet = true
