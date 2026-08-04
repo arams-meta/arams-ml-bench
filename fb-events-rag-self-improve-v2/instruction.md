@@ -33,18 +33,24 @@ Constraints:
 - Do NOT read /opt/eval if present - grading only. Do NOT modify /app/data
 - Grader recomputes recall from retrieved.jsonl vs hidden, self-reported eval_report is schema only
 
-Temporal semantics (deterministic):
-- query_date is query issuance date
-- Time phrases mapping: 
-  - tomorrow = +1 day
-  - weekend = +3 days  
-  - next week = +10 days
-  - this month = +15 days
-  - next month = +45 days
-- Train: time_window = query_date + phrase_offset ±20 days fixed, lat/lng = city center, radius 50 km fixed
-- Holdout: query_date is NOT shifted for holdout, only the time window shifts +35 days into future.
-  So holdout time_window = query_date + phrase_offset + 35 days ±20 days, same ±20 days half-width as train.
-  This tests generalization to future windows.
+Temporal semantics (deterministic, exact formulas):
+- query_date is query issuance date (ISO date, e.g., 2026-01-15)
+- Time phrases mapping (phrase_offset):
+  - "tomorrow" = +1 day
+  - "weekend" = +3 days
+  - "next week" = +10 days
+  - "this month" = +15 days
+  - "next month" = +45 days
+  Example: query_date 2026-01-15 + "weekend" (+3d) => center = 2026-01-18
+- Train formula:
+  time_window_start = query_date + phrase_offset - 20 days
+  time_window_end = query_date + phrase_offset + 20 days
+  lat/lng = city center (from CITIES dict), radius_km = 50 fixed
+- Holdout formula (future generalization test):
+  query_date is NOT shifted for holdout, only the window shifts +35d.
+  time_window_start = query_date + phrase_offset + 35 days - 20 days
+  time_window_end = query_date + phrase_offset + 35 days + 20 days
+  Same ±20 days half-width as train, just +35d in future.
 
 Scoring thresholds (recomputed from hidden /opt/eval):
 - Improved recall@10 >=0.40, lift > baseline+0.08 (baseline ~0.27 pop-only ignoring facet), holdout >=0.25 ratio >=0.4
