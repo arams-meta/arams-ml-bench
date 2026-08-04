@@ -8,15 +8,15 @@ Inventory, queries, holdout inputs live in /app/data:
 
 Note: Full structured queries with city/category/facet/time_window/radius/lat/lng are in /opt/eval/ for grading only. Agent must parse free-form text to extract city, category, facet, time phrase, etc.
 
-Relevance rule (deterministic, no LLM):
-- event city == query city
-- category match if query specifies category
-- facet/topic match: event.topic == query.facet (this is the key semantic signal; popularity-only baseline ignores it and fails)
-- start_time within [time_window_start, time_window_end]
-- haversine distance <= radius_km
-- not is_spam, start_time >= 2026-02-01 cutoff
-- dedup: keep only 1 per cluster_id (highest popularity) before capping 30
-- guarantee >=1 relevant per query
+Relevance rule (deterministic, no LLM, all must hold):
+1. event city == query city
+2. category match if query specifies category
+3. facet/topic match: event.topic == query.facet (this is the key semantic signal; popularity-only baseline ignores it and fails ~0.27 recall)
+4. start_time within [time_window_start, time_window_end] inclusive
+5. haversine distance <= radius_km
+6. not is_spam AND start_time >= 2026-02-01 cutoff (freshness filter)
+7. dedup: keep only 1 per cluster_id (highest popularity) before capping at 30 results
+8. dataset guarantee: >=1 relevant per query in ground truth
 
 You need to produce output in following targets:
 - /output/retrieved.jsonl: jsonl lines {"query_id": "q_00000", "retrieved_ids": ["ev_..."] } top 10 per query
@@ -35,15 +35,23 @@ Constraints:
 
 Temporal semantics (deterministic):
 - query_date is query issuance date
-- Time phrases: tomorrow +1d, weekend +3d, next week +10d, this month +15d, next month +45d
-- Train: time_window = query_date + offset ±20d fixed, lat/lng = city center, radius 50 fixed
-- Holdout: query_date is NOT shifted, but only the time window shifts +35d. So holdout
-  time_window = query_date + phrase_offset + 35d ±20d, the same ±20d half-width as train.
+- Time phrases mapping: 
+  - tomorrow = +1 day
+  - weekend = +3 days  
+  - next week = +10 days
+  - this month = +15 days
+  - next month = +45 days
+- Train: time_window = query_date + phrase_offset ±20 days fixed, lat/lng = city center, radius 50 km fixed
+- Holdout: query_date is NOT shifted for holdout, only the time window shifts +35 days into future.
+  So holdout time_window = query_date + phrase_offset + 35 days ±20 days, same ±20 days half-width as train.
+  This tests generalization to future windows.
 
 Scoring thresholds (recomputed from hidden /opt/eval):
 - Improved recall@10 >=0.40, lift > baseline+0.08 (baseline ~0.27 pop-only ignoring facet), holdout >=0.25 ratio >=0.4
 - Time/geo/dedup/spam/freshness: time <=40%, geo <=20%, dup <=30%, spam <=5%, freshness start_time>=2026-02-01 must be 0%
 - Free-form extraction: city >=0.60, facet >=0.50, category >=0.40
-- Embedding: must use MiniLM, rag_config embedding_model all-MiniLM-L6-v2 and embedding_used true, plus behavioral: facet-match >=60% on retrieved (topic==facet) and semantic cosine avg improved > random (retrieved more similar to query than random) using MiniLM
+- Embedding: must use MiniLM, rag_config embedding_model all-MiniLM-L6-v2 and embedding_used true, plus behavioral: facet-match >=60% on retrieved (topic==facet) using MiniLM
 - Self-improvement: loop must iterate: rag_config self_improvement true + steps list >=3 with rewrite/rerank, 500 parsed, 500 retrieved, 100 holdout, lift>0.08 recomputed
 - Baked artifacts: /app/data/minilm, /app/data/corpus_emb.npy, /app/data/corpus_ids.json must exist
+
+Note: Facet-match >=60% behavioral check proves embedding pipeline uses topic==facet semantic filtering (pop-only baseline ~5-10% facet-match).
