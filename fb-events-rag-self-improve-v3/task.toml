@@ -1,0 +1,39 @@
+version = "1.0"
+
+[task]
+name = "codimango/fb-events-rag-self-improve-v3"
+description = "Self-improving RAG with auto-eval loop for Facebook Events inventory"
+authors = [{ name = "Aram", email = "arams@meta.com" }]
+keywords = ["ml", "llm", "rag", "retrieval", "self-improvement", "evaluation", "events"]
+format = "ml_bench_single_turn"
+workstream = "llm_research"
+
+[metadata]
+author_name = "Aram"
+author_email = "arams@meta.com"
+difficulty = "medium"
+languages = ["python"]
+category_usecase = "define_learned_model"
+category_subdomain = "machine_learning"
+reward_type = "binary"
+seed = 42
+deterministic = true
+timeout = 1800
+memory_limit = "8GB"
+tags = ["ml", "ml-bench", "llm-research", "llm", "rag", "self-improvement", "cpu-native"]
+
+[verifier]
+timeout_sec = 1800
+environment_mode = "separate"
+
+[agent]
+timeout_sec = 1800
+
+[environment]
+python_version = "3.10"
+allow_internet = true
+build_timeout_sec = 5400
+cpus = 4
+memory_mb = 16384
+storage_mb = 16384
+requirements = ["sentence-transformers==2.2.2", "faiss-cpu==1.7.4", "numpy==1.24.3", "scikit-learn==1.3.0", "pandas==2.0.3"]

@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+import sys
+
+with open(sys.argv[1] if len(sys.argv) > 1 else "/dev/null") as f:
+    content = f.read().lower()
+
+if "memoryerror" in content or "killed" in content:
+    print("oom")
+elif "modulenotfounderror" in content or "no module named" in content:
+    print("dependency_error")
+elif "filenotfounderror" in content:
+    print("pipeline_broken")
+elif "nan" in content and "loss" in content:
+    print("nan_loss")
+elif "not found" in content and "/output" in content:
+    print("pipeline_broken")
+elif "assert" in content and "recall" in content:
+    # Could be tolerance_miss or directional_miss or below_baseline
+    if "lift" in content or "baseline" in content:
+        print("below_baseline")
+    elif ">" in content:
+        print("directional_miss")
+    else:
+        print("tolerance_miss")
+elif "time window" in content or "geo" in content or "radius" in content or "constraint" in content:
+    print("constraint_violation")
+elif "spam" in content:
+    print("constraint_violation")
+elif "dedup" in content or "duplicate" in content:
+    print("constraint_violation")
+elif "eval_report" in content or "rag_config" in content:
+    print("schema_violation")
+elif "holdout" in content:
+    print("tolerance_miss")
+elif "below_baseline" in content:
+    print("below_baseline")
+else:
+    print("unknown")
