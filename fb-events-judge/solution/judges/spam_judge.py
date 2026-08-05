@@ -1,13 +1,53 @@
-"""spam_judge.py oracle - real agent should call Llama API per rubric_multi_judge.md"""
-import os, json
-def judge(item, events_map, rubric):
-    flaw = item.get("flaw_type","none")
-    if "spam_judge.py"=="accuracy_judge.py":
-        return (1, "hallucinates event not in inventory", "fail") if flaw=="hallucination" else (5, "all events in inventory", "pass")
-    if "spam_judge.py"=="filter_judge.py":
-        return (2, "wrong city/time filter", "fail") if flaw in ["wrong_time","hallucination"] else (5, "respects city/category/time", "pass")
-    if "spam_judge.py"=="spam_judge.py":
-        return (2, "spam or duplicate cluster", "fail") if flaw=="spam" else (5, "no spam deduped", "pass")
-    if "spam_judge.py"=="helpfulness_judge.py":
-        return (2, "unhelpful", "fail") if item["category"]=="bad" else (5, "helpful summary with venue/date", "pass")
-    return (3, "unknown", "pass")
+"""Spam judge: duplicates, undeduped clusters, and flagged-spam events.
+
+Oracle implementation - deterministic and grounded in events.jsonl.
+"""
+
+try:
+    from ._common import parse_listings, resolve, says_no_results
+except ImportError:
+    from _common import parse_listings, resolve, says_no_results
+
+
+def judge(item, events):
+    answer = item.get("agent_answer", "")
+    if says_no_results(answer):
+        return {
+            "score": 5,
+            "reasoning": "Answer claims no events; nothing duplicated.",
+            "verdict": "pass",
+        }
+
+    problems = []
+    seen_listings, seen_clusters = set(), {}
+    for listing in parse_listings(answer):
+        key = (listing["head"], listing["date"])
+        if key in seen_listings:
+            problems.append(f"{listing['head']} listed more than once")
+        seen_listings.add(key)
+
+        event = resolve(listing, events)
+        if not event:
+            continue
+        if event.get("is_spam"):
+            problems.append(f"{event['title']} is flagged is_spam")
+        cluster = event.get("cluster_id")
+        if cluster:
+            if cluster in seen_clusters and seen_clusters[cluster] != event["id"]:
+                problems.append(
+                    f"{event['title']} repeats cluster {cluster} already covered "
+                    f"by {seen_clusters[cluster]}"
+                )
+            seen_clusters.setdefault(cluster, event["id"])
+
+    if problems:
+        return {
+            "score": 1,
+            "reasoning": "Spam/dedup failures: " + "; ".join(problems[:3]) + ".",
+            "verdict": "fail",
+        }
+    return {
+        "score": 5,
+        "reasoning": "No duplicate clusters, repeats, or flagged-spam events.",
+        "verdict": "pass",
+    }

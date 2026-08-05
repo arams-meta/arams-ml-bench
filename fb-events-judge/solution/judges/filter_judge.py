@@ -1,13 +1,71 @@
-"""filter_judge.py oracle - real agent should call Llama API per rubric_multi_judge.md"""
-import os, json
-def judge(item, events_map, rubric):
-    flaw = item.get("flaw_type","none")
-    if "filter_judge.py"=="accuracy_judge.py":
-        return (1, "hallucinates event not in inventory", "fail") if flaw=="hallucination" else (5, "all events in inventory", "pass")
-    if "filter_judge.py"=="filter_judge.py":
-        return (2, "wrong city/time filter", "fail") if flaw in ["wrong_time","hallucination"] else (5, "respects city/category/time", "pass")
-    if "filter_judge.py"=="spam_judge.py":
-        return (2, "spam or duplicate cluster", "fail") if flaw=="spam" else (5, "no spam deduped", "pass")
-    if "filter_judge.py"=="helpfulness_judge.py":
-        return (2, "unhelpful", "fail") if item["category"]=="bad" else (5, "helpful summary with venue/date", "pass")
-    return (3, "unknown", "pass")
+"""Filter judge: does every claimed event respect the query's city and window?
+
+Oracle implementation - deterministic and grounded in events.jsonl.
+"""
+
+try:
+    from ._common import (
+        parse_listings,
+        resolve,
+        says_no_results,
+        in_window,
+        stated_city,
+        answer_cities,
+    )
+except ImportError:
+    from _common import (
+        parse_listings,
+        resolve,
+        says_no_results,
+        in_window,
+        stated_city,
+        answer_cities,
+    )
+
+
+def judge(item, events):
+    answer = item.get("agent_answer", "")
+    filters = item.get("query_filters", {}) or {}
+    want_city = filters.get("city")
+    cities = {e["city"] for e in events}
+
+    if says_no_results(answer):
+        return {
+            "score": 5,
+            "reasoning": "Answer claims no events; no filter to violate.",
+            "verdict": "pass",
+        }
+
+    problems = []
+    # Some answers name the wrong city in the preamble rather than per-listing.
+    for other in sorted(answer_cities(answer, cities) - {want_city}):
+        problems.append(f"answer places results in {other}, not {want_city}")
+
+    for listing in parse_listings(answer):
+        head = listing["head"]
+        event = resolve(listing, events)
+        # A city named in the answer text is a claim in its own right, even if
+        # the underlying event resolves to somewhere else.
+        claimed = stated_city(listing, cities)
+        if claimed and want_city and claimed != want_city:
+            problems.append(f"{head} placed in {claimed}, not {want_city}")
+        elif event and want_city and event["city"] != want_city:
+            problems.append(f"{head} is in {event['city']}, not {want_city}")
+        if not in_window(listing["date"], filters):
+            problems.append(
+                f"{head} on {listing['date']} falls outside "
+                f"{(filters.get('time_window_start') or '')[:10]}.."
+                f"{(filters.get('time_window_end') or '')[:10]}"
+            )
+
+    if problems:
+        return {
+            "score": 2,
+            "reasoning": "Filter violations: " + "; ".join(problems[:3]) + ".",
+            "verdict": "fail",
+        }
+    return {
+        "score": 5,
+        "reasoning": f"All listed events match city {want_city} and the requested window.",
+        "verdict": "pass",
+    }

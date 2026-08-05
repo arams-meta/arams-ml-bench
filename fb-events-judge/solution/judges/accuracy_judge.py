@@ -1,13 +1,43 @@
-"""accuracy_judge.py oracle - real agent should call Llama API per rubric_multi_judge.md"""
-import os, json
-def judge(item, events_map, rubric):
-    flaw = item.get("flaw_type","none")
-    if "accuracy_judge.py"=="accuracy_judge.py":
-        return (1, "hallucinates event not in inventory", "fail") if flaw=="hallucination" else (5, "all events in inventory", "pass")
-    if "accuracy_judge.py"=="filter_judge.py":
-        return (2, "wrong city/time filter", "fail") if flaw in ["wrong_time","hallucination"] else (5, "respects city/category/time", "pass")
-    if "accuracy_judge.py"=="spam_judge.py":
-        return (2, "spam or duplicate cluster", "fail") if flaw=="spam" else (5, "no spam deduped", "pass")
-    if "accuracy_judge.py"=="helpfulness_judge.py":
-        return (2, "unhelpful", "fail") if item["category"]=="bad" else (5, "helpful summary with venue/date", "pass")
-    return (3, "unknown", "pass")
+"""Accuracy judge: does every claimed event actually exist in the inventory?
+
+Oracle implementation - deterministic and grounded in events.jsonl. A real
+solution is expected to reach the same verdicts via the LLM API; see
+solution/judge_llm.py for the prompt-based version.
+"""
+
+try:
+    from ._common import parse_listings, resolve, says_no_results
+except ImportError:  # loaded as a loose module rather than a package
+    from _common import parse_listings, resolve, says_no_results
+
+
+def judge(item, events):
+    answer = item.get("agent_answer", "")
+    if says_no_results(answer):
+        return {
+            "score": 5,
+            "reasoning": "Answer claims no events; nothing to hallucinate.",
+            "verdict": "pass",
+        }
+
+    listings = parse_listings(answer)
+    if not listings:
+        return {
+            "score": 3,
+            "reasoning": "No parseable event listings to verify against inventory.",
+            "verdict": "fail",
+        }
+
+    invented = [l for l in listings if resolve(l, events) is None]
+    if invented:
+        names = ", ".join(sorted({l["head"] for l in invented}))
+        return {
+            "score": 1,
+            "reasoning": f"Not present in events.jsonl: {names}.",
+            "verdict": "fail",
+        }
+    return {
+        "score": 5,
+        "reasoning": f"All {len(listings)} listed events resolve to inventory rows.",
+        "verdict": "pass",
+    }

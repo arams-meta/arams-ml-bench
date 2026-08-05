@@ -1,13 +1,50 @@
-"""helpfulness_judge.py oracle - real agent should call Llama API per rubric_multi_judge.md"""
-import os, json
-def judge(item, events_map, rubric):
-    flaw = item.get("flaw_type","none")
-    if "helpfulness_judge.py"=="accuracy_judge.py":
-        return (1, "hallucinates event not in inventory", "fail") if flaw=="hallucination" else (5, "all events in inventory", "pass")
-    if "helpfulness_judge.py"=="filter_judge.py":
-        return (2, "wrong city/time filter", "fail") if flaw in ["wrong_time","hallucination"] else (5, "respects city/category/time", "pass")
-    if "helpfulness_judge.py"=="spam_judge.py":
-        return (2, "spam or duplicate cluster", "fail") if flaw=="spam" else (5, "no spam deduped", "pass")
-    if "helpfulness_judge.py"=="helpfulness_judge.py":
-        return (2, "unhelpful", "fail") if item["category"]=="bad" else (5, "helpful summary with venue/date", "pass")
-    return (3, "unknown", "pass")
+"""Helpfulness judge: does the answer actually respond, with venue and date?
+
+Oracle implementation. Judges presentation only - whether the facts are correct
+is the other three judges' business.
+"""
+
+try:
+    from ._common import parse_listings, says_no_results
+except ImportError:
+    from _common import parse_listings, says_no_results
+
+
+def judge(item, events):
+    answer = (item.get("agent_answer") or "").strip()
+
+    if says_no_results(answer):
+        return {
+            "score": 5,
+            "reasoning": "Clear, direct 'no matching events' response.",
+            "verdict": "pass",
+        }
+
+    if len(answer) < 20:
+        return {
+            "score": 1,
+            "reasoning": "Answer is too short to be useful.",
+            "verdict": "fail",
+        }
+
+    listings = parse_listings(answer)
+    if not listings:
+        return {
+            "score": 2,
+            "reasoning": "Names no events with a venue and date the user could act on.",
+            "verdict": "fail",
+        }
+
+    dated = [l for l in listings if l["date"]]
+    if len(dated) < len(listings):
+        return {
+            "score": 3,
+            "reasoning": "Some listed events are missing a date.",
+            "verdict": "fail",
+        }
+
+    return {
+        "score": 5,
+        "reasoning": f"Names {len(listings)} events, each with venue and date.",
+        "verdict": "pass",
+    }
