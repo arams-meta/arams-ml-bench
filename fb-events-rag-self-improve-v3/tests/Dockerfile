@@ -18,14 +18,16 @@ RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu 
 WORKDIR /app
 RUN mkdir -p /app/data /opt/eval /output /logs/verifier
 
-# Pre-baked
+# Pre-baked: agent-visible + hidden (hidden at task root eval/, NOT inside data/)
 COPY data/ /app/data/
-COPY data/eval/ /opt/eval/
+COPY eval/ /opt/eval/
 
 RUN ls -lh /app/data/ /opt/eval/ && \
+    echo "Verifier must have hidden:" && ls /opt/eval/queries.jsonl /opt/eval/events.jsonl && \
+    echo "Agent must NOT have eval:" && ls /app/data/eval/ 2>&1 && echo "LEAK" && exit 1 || echo "no eval in agent good" && \
     chmod 700 /opt/eval && chown -R root:root /opt/eval && \
     chown -R root:root /app/data && chmod -R a+rX /app/data && chmod 700 /opt/eval && \
-    rm -rf /app/data/eval && echo "verifier ready v3"
+    echo "verifier ready v3 clean"
 
 ENV PYTHONHASHSEED=42
 ENV TRANSFORMERS_OFFLINE=1
