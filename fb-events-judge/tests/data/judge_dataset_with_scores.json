@@ -12,7 +12,7 @@
       "lat": 47.586272,
       "lng": -122.360901
     },
-    "agent_answer": "Here are Business events near Seattle matching 'Business events next month in Seattle': Founder Breakfast at Skyline Rooftop at Skyline Rooftop in Seattle on 2026-04-27; Founder Breakfast at Civic Auditorium at Civic Auditorium in Seattle on 2026-04-27; Founder Breakfast at Civic Auditorium (Official) at Civic Auditorium in Seattle on 2026-04-27. All within your time window and deduped.",
+    "agent_answer": "Here are some Business events near Seattle: Founder Breakfast at Skyline Rooftop on 2026-04-27; Founder Breakfast at Civic Auditorium on 2026-04-27; Founder Breakfast at Civic Auditorium (Official) on 2026-04-27.",
     "ground_truth_ids": [
       "evt_003556",
       "evt_007613",
@@ -37,7 +37,7 @@
       "lat": 30.315567,
       "lng": -97.7289
     },
-    "agent_answer": "Music events: Cloud Native Meetup: Hiring Mixer at Market Square at Market Square and duplicate Weekend Running League at Union Hall (same cluster_id None not deduped, should be deduped). Also includes spam flagged event (is_spam=true) which should be excluded.",
+    "agent_answer": "Here are events: Cloud Native Meetup: Hiring Mixer at Market Square on 2026-02-24 and Cloud Native Meetup: Hiring Mixer at Market Square on 2026-02-24. Both in Austin.",
     "ground_truth_ids": [
       "evt_006372",
       "evt_015980",
@@ -61,7 +61,7 @@
       "lat": 39.736016,
       "lng": -105.050347
     },
-    "agent_answer": "Here are Food events near Denver matching 'Food events next month in Denver': Indian Street Food Market at City Hall at City Hall in Denver on 2026-07-20; Thai Festival 2026 at Central Park in Denver on 2026-07-23; Japanese Festival 2026 at City Hall in Denver on 2026-07-19. All within your time window and deduped.",
+    "agent_answer": "Here are some Food events near Denver: Indian Street Food Market at City Hall on 2026-07-20; Thai Festival 2026 at Central Park on 2026-07-23; Japanese Festival 2026 at City Hall on 2026-07-19.",
     "ground_truth_ids": [
       "evt_004160",
       "evt_008572",
@@ -74,7 +74,7 @@
     "category": "good"
   },
   {
-    "id": "q_00379_bad_hallucination",
+    "id": "q_00379_bad_wrong_city",
     "query_id": "q_00379",
     "user_question": "best Arts events near Austin next month",
     "query_filters": {
@@ -86,7 +86,7 @@
       "lat": 30.303027,
       "lng": -97.762406
     },
-    "agent_answer": "Found events: Austin Photography Walk in Austin and also Secret Underground Rave at Hidden Bunker - Exclusive Invite Only in Los Angeles (this event does NOT exist in inventory, hallucinated) plus another event in Berlin. This violates faithfulness - includes events not in events.jsonl and wrong city.",
+    "agent_answer": "Found Arts events: Austin Photography Walk in Berlin on 2026-04-24.",
     "ground_truth_ids": [
       "evt_000768",
       "evt_001615",
@@ -94,8 +94,8 @@
       "evt_002460",
       "evt_002500"
     ],
-    "flaw_type": "hallucination",
-    "human_score": 1,
+    "flaw_type": "wrong_city",
+    "human_score": 2,
     "category": "bad"
   },
   {
@@ -111,7 +111,7 @@
       "lat": 37.81005,
       "lng": -122.418156
     },
-    "agent_answer": "Here are Tech events near San Francisco matching 'best Tech events near San Francisco this month': Cloud Native Summit - San Francisco at Warehouse 22 in San Francisco on 2026-03-18; AI Meetup: Lightning Talks at The Loft (Official) at The Loft in San Francisco on 2026-03-08; Cybersecurity Summit - San Francisco at City Hall in San Francisco on 2026-03-05. All within your time window and deduped.",
+    "agent_answer": "Here are some Tech events near San Francisco: Cloud Native Summit - San Francisco at Warehouse 22 on 2026-03-18; AI Meetup: Lightning Talks at The Loft (Official) on 2026-03-08; Cybersecurity Summit - San Francisco at City Hall on 2026-03-05.",
     "ground_truth_ids": [
       "evt_000122",
       "evt_000399",
@@ -124,7 +124,7 @@
     "category": "good"
   },
   {
-    "id": "q_00125_bad_hallucination",
+    "id": "q_00125_bad_spam",
     "query_id": "q_00125",
     "user_question": "weekend Nightlife in New York",
     "query_filters": {
@@ -136,13 +136,13 @@
       "lat": 40.726723,
       "lng": -73.967179
     },
-    "agent_answer": "Found events: Rooftop Party - Union Hall in New York and also Secret Underground Rave at Hidden Bunker - Exclusive Invite Only in Los Angeles (this event does NOT exist in inventory, hallucinated) plus another event in Berlin. This violates faithfulness - includes events not in events.jsonl and wrong city.",
+    "agent_answer": "Here are events: Rooftop Party - Union Hall at Union Hall on 2026-05-22 and Rooftop Party - Union Hall at Union Hall on 2026-05-22. Both in New York.",
     "ground_truth_ids": [
       "evt_001101",
       "evt_012957"
     ],
-    "flaw_type": "hallucination",
-    "human_score": 1,
+    "flaw_type": "spam",
+    "human_score": 2,
     "category": "bad"
   },
   {
@@ -158,7 +158,7 @@
       "lat": 47.61995,
       "lng": -122.279622
     },
-    "agent_answer": "Here are None events near Seattle matching 'things to do this month in Seattle': Acoustic Evening with Crestline at Warehouse 22 in Seattle on 2026-04-05; Neon Harbor Concert - Seattle Nights at Harbor View in Seattle on 2026-03-11; Seattle Community Cleanup at The Loft in Seattle on 2026-03-13. All within your time window and deduped.",
+    "agent_answer": "Here are some None events near Seattle: Acoustic Evening with Crestline at Warehouse 22 on 2026-04-05; Neon Harbor Concert - Seattle Nights at Harbor View on 2026-03-11; Seattle Community Cleanup at The Loft on 2026-03-13.",
     "ground_truth_ids": [
       "evt_002600",
       "evt_008767",
@@ -171,7 +171,7 @@
     "category": "good"
   },
   {
-    "id": "q_00071_bad_spam",
+    "id": "q_00071_bad_wrong_city",
     "query_id": "q_00071",
     "user_question": "what's happening in San Francisco next month",
     "query_filters": {
@@ -183,7 +183,7 @@
       "lat": 37.79824,
       "lng": -122.386689
     },
-    "agent_answer": "Music events: Vegan Festival 2026 at Riverside Hall and duplicate Weekend Running League at Union Hall (same cluster_id None not deduped, should be deduped). Also includes spam flagged event (is_spam=true) which should be excluded.",
+    "agent_answer": "Found None events: Vegan Festival 2026 in Los Angeles on 2026-06-11.",
     "ground_truth_ids": [
       "evt_001321",
       "evt_001440",
@@ -191,7 +191,7 @@
       "evt_001700",
       "evt_002570"
     ],
-    "flaw_type": "spam",
+    "flaw_type": "wrong_city",
     "human_score": 2,
     "category": "bad"
   },
@@ -208,7 +208,7 @@
       "lat": 45.453746,
       "lng": -122.732154
     },
-    "agent_answer": "Here are Music events near Portland matching 'weekend Music in Portland': The Midnight Signals Live at Community Center at Community Center in Portland on 2026-04-14; Silver Lake Collective Live at Market Square at Market Square in Portland on 2026-04-11; Acoustic Evening with Blue Violet at Union Hall in Portland on 2026-04-14. All within your time window and deduped.",
+    "agent_answer": "Here are some Music events near Portland: The Midnight Signals Live at Community Center on 2026-04-14; Silver Lake Collective Live at Market Square on 2026-04-11; Acoustic Evening with Blue Violet at Union Hall on 2026-04-14.",
     "ground_truth_ids": [
       "evt_000242",
       "evt_004495",
@@ -221,7 +221,7 @@
     "category": "good"
   },
   {
-    "id": "q_00052_bad_hallucination",
+    "id": "q_00052_bad_spam",
     "query_id": "q_00052",
     "user_question": "best Community events near Chicago next month",
     "query_filters": {
@@ -233,7 +233,7 @@
       "lat": 41.866967,
       "lng": -87.673898
     },
-    "agent_answer": "Found events: Volunteer Day at Harbor View in Chicago and also Secret Underground Rave at Hidden Bunker - Exclusive Invite Only in Los Angeles (this event does NOT exist in inventory, hallucinated) plus another event in Berlin. This violates faithfulness - includes events not in events.jsonl and wrong city.",
+    "agent_answer": "Here are events: Volunteer Day at Harbor View on 2026-04-20 and Volunteer Day at Harbor View on 2026-04-20. Both in Chicago.",
     "ground_truth_ids": [
       "evt_008030",
       "evt_010481",
@@ -241,8 +241,8 @@
       "evt_015823",
       "evt_015824"
     ],
-    "flaw_type": "hallucination",
-    "human_score": 1,
+    "flaw_type": "spam",
+    "human_score": 2,
     "category": "bad"
   },
   {
@@ -258,7 +258,7 @@
       "lat": 30.311166,
       "lng": -97.750885
     },
-    "agent_answer": "Here are Business events near Austin matching 'things to do tomorrow in Austin': AI Startup Pitch @ Warehouse 22 at Warehouse 22 in Austin on 2026-02-15; Networking Mixer - Austin at The Loft in Austin on 2026-02-11; Networking Mixer - Austin at Warehouse 22 in Austin on 2026-02-15. All within your time window and deduped.",
+    "agent_answer": "Here are some Business events near Austin: AI Startup Pitch @ Warehouse 22 at Warehouse 22 on 2026-02-15; Networking Mixer - Austin at The Loft on 2026-02-11; Networking Mixer - Austin at Warehouse 22 on 2026-02-15.",
     "ground_truth_ids": [
       "evt_001554",
       "evt_008552",
@@ -271,7 +271,7 @@
     "category": "good"
   },
   {
-    "id": "q_00456_bad_hallucination",
+    "id": "q_00456_bad_wrong_city",
     "query_id": "q_00456",
     "user_question": "Arts events next month in New York",
     "query_filters": {
@@ -283,14 +283,14 @@
       "lat": 40.679909,
       "lng": -74.031254
     },
-    "agent_answer": "Found events: Film Screening Workshop: Central Park Showcase in New York and also Secret Underground Rave at Hidden Bunker - Exclusive Invite Only in Los Angeles (this event does NOT exist in inventory, hallucinated) plus another event in Berlin. This violates faithfulness - includes events not in events.jsonl and wrong city.",
+    "agent_answer": "Found Arts events: Film Screening Workshop: Central Park Showcase in Los Angeles on 2026-03-30.",
     "ground_truth_ids": [
       "evt_009788",
       "evt_012205",
       "evt_015367"
     ],
-    "flaw_type": "hallucination",
-    "human_score": 1,
+    "flaw_type": "wrong_city",
+    "human_score": 2,
     "category": "bad"
   },
   {
@@ -306,7 +306,7 @@
       "lat": 39.994698,
       "lng": -75.192523
     },
-    "agent_answer": "No Tech events found in Philadelphia for your dates 2026-03-04T00:00:00 to 2026-03-04T23:59:00. Try expanding radius (current 50km) or category.",
+    "agent_answer": "I couldn't find any Tech events in Philadelphia for 2026-03-04 to 2026-03-04.",
     "ground_truth_ids": [],
     "flaw_type": "none",
     "human_score": 5,
@@ -325,7 +325,7 @@
       "lat": 41.860728,
       "lng": -87.579525
     },
-    "agent_answer": "Music events: Robotics Summit - Chicago at Central Park and duplicate Weekend Running League at Union Hall (same cluster_id None not deduped, should be deduped). Also includes spam flagged event (is_spam=true) which should be excluded.",
+    "agent_answer": "Here are events: Robotics Summit - Chicago at Central Park on 2026-07-28 and Robotics Summit - Chicago at Central Park on 2026-07-28. Both in Chicago.",
     "ground_truth_ids": [
       "evt_000716",
       "evt_001265",
@@ -350,7 +350,7 @@
       "lat": 37.795229,
       "lng": -122.398323
     },
-    "agent_answer": "Here are Tech events near San Francisco matching 'things to do next month in San Francisco': Cloud Native Hands-on Workshop at Civic Auditorium in San Francisco on 2026-04-13; Data Engineering Meetup: Lightning Talks at Skyline Rooftop at Skyline Rooftop in San Francisco on 2026-04-12; Data Engineering Meetup: Fireside Chat at The Loft at The Loft in San Francisco on 2026-04-11. All within your time window and deduped.",
+    "agent_answer": "Here are some Tech events near San Francisco: Cloud Native Hands-on Workshop at Civic Auditorium on 2026-04-13; Data Engineering Meetup: Lightning Talks at Skyline Rooftop on 2026-04-12; Data Engineering Meetup: Fireside Chat at The Loft on 2026-04-11.",
     "ground_truth_ids": [
       "evt_001256",
       "evt_006833",
@@ -363,7 +363,7 @@
     "category": "good"
   },
   {
-    "id": "q_00216_bad_hallucination",
+    "id": "q_00216_bad_wrong_city",
     "query_id": "q_00216",
     "user_question": "weekend Business in Miami",
     "query_filters": {
@@ -375,15 +375,15 @@
       "lat": 25.790609,
       "lng": -80.193341
     },
-    "agent_answer": "Found events: AI Startup Pitch @ Downtown Plaza in Miami and also Secret Underground Rave at Hidden Bunker - Exclusive Invite Only in Los Angeles (this event does NOT exist in inventory, hallucinated) plus another event in Berlin. This violates faithfulness - includes events not in events.jsonl and wrong city.",
+    "agent_answer": "Found Business events: AI Startup Pitch @ Downtown Plaza in Berlin on 2026-02-22.",
     "ground_truth_ids": [
       "evt_001471",
       "evt_001801",
       "evt_004648",
       "evt_007453"
     ],
-    "flaw_type": "hallucination",
-    "human_score": 1,
+    "flaw_type": "wrong_city",
+    "human_score": 2,
     "category": "bad"
   },
   {
@@ -399,7 +399,7 @@
       "lat": 45.461704,
       "lng": -122.724884
     },
-    "agent_answer": "Here are Nightlife events near Portland matching 'what's happening in Portland tomorrow': DJ Night at City Hall at City Hall in Portland on 2026-02-06; DJ Night at Riverside Hall at Riverside Hall in Portland on 2026-02-03. All within your time window and deduped.",
+    "agent_answer": "Here are some Nightlife events near Portland: DJ Night at City Hall on 2026-02-06; DJ Night at Riverside Hall on 2026-02-03.",
     "ground_truth_ids": [
       "evt_004857",
       "evt_014385"
@@ -421,7 +421,7 @@
       "lat": 47.638587,
       "lng": -122.311794
     },
-    "agent_answer": "Music events: Vegan Street Food Market at Skyline Rooftop at Skyline Rooftop and duplicate Weekend Running League at Union Hall (same cluster_id None not deduped, should be deduped). Also includes spam flagged event (is_spam=true) which should be excluded.",
+    "agent_answer": "Here are events: Vegan Street Food Market at Skyline Rooftop on 2026-05-21 and Vegan Street Food Market at Skyline Rooftop on 2026-05-21. Both in Seattle.",
     "ground_truth_ids": [
       "evt_005011",
       "evt_007531",
@@ -446,7 +446,7 @@
       "lat": 40.7179,
       "lng": -74.043197
     },
-    "agent_answer": "Here are Sports events near New York matching 'what's happening in New York next month': Yoga & Brunch at Civic Auditorium in New York on 2026-06-21; Weekend Soccer League at Riverside Hall in New York on 2026-06-20; Yoga Community Gathering at Warehouse 22 at Warehouse 22 in New York on 2026-06-22. All within your time window and deduped.",
+    "agent_answer": "Here are some Sports events near New York: Yoga & Brunch at Civic Auditorium on 2026-06-21; Weekend Soccer League at Riverside Hall on 2026-06-20; Yoga Community Gathering at Warehouse 22 on 2026-06-22.",
     "ground_truth_ids": [
       "evt_000199",
       "evt_000686",
@@ -459,7 +459,7 @@
     "category": "good"
   },
   {
-    "id": "q_00111_bad_spam",
+    "id": "q_00111_bad_wrong_city",
     "query_id": "q_00111",
     "user_question": "best Arts events near Philadelphia next month",
     "query_filters": {
@@ -471,7 +471,7 @@
       "lat": 39.892426,
       "lng": -75.151357
     },
-    "agent_answer": "Music events: Painting Expo: Downtown Plaza Showcase at Downtown Plaza and duplicate Weekend Running League at Union Hall (same cluster_id None not deduped, should be deduped). Also includes spam flagged event (is_spam=true) which should be excluded.",
+    "agent_answer": "Found Arts events: Painting Expo: Downtown Plaza Showcase in Los Angeles on 2026-05-27.",
     "ground_truth_ids": [
       "evt_000881",
       "evt_009120",
@@ -479,7 +479,7 @@
       "evt_013811",
       "evt_016558"
     ],
-    "flaw_type": "spam",
+    "flaw_type": "wrong_city",
     "human_score": 2,
     "category": "bad"
   }
