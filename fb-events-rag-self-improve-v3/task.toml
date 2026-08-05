@@ -1,5 +1,10 @@
 version = "1.0"
 
+# Separate verifier mode runs the tests in a different container than the agent,
+# so /output must be declared as an artifact to be carried across. Without this
+# the verifier sees an empty /output and every test fails on missing files.
+artifacts = ["/output"]
+
 [task]
 name = "codimango/fb-events-rag-self-improve-v3"
 description = "Self-improving RAG with auto-eval loop for Facebook Events inventory"

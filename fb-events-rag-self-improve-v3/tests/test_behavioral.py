@@ -117,7 +117,7 @@ def test_embedding_usage_proven():
             retrieved[obj["query_id"]] = obj.get("retrieved_ids", [])
 
     # Behavioral facet-match rate: improved filters by facet, so retrieved events topic == query facet
-    # Instruction states: facet/topic match is key semantic signal; popularity-only baseline ignores it and fails ~0.27
+    # Instruction states: facet/topic match is key semantic signal; popularity-only baseline ignoring facet gets 0.541 and is improved by facet-aware retrieval
     # Baseline pop-only facet match ~1/num_topics (~5-10%), improved must be >=60% - strong behavioral proof, stated in instruction
     parsed_path = "/output/parsed_filters.jsonl"
     assert os.path.exists(parsed_path), "Missing parsed_filters.jsonl for facet proof"
@@ -233,8 +233,8 @@ def test_embedding_usage_proven():
         hits = len(set(ret[:10]) & set(rel))
         recalls.append(hits / len(rel))
     improved_recall = sum(recalls) / len(recalls) if recalls else 0.0
-    assert improved_recall >= 0.40, (
-        f"Recomputed improved recall@10 {improved_recall:.3f} <0.40 - baseline pop-only is 0.27, need facet-aware embedding (recomputed, not trusting eval_report)"
+    assert improved_recall >= 0.65, (
+        f"Recomputed improved recall@10 {improved_recall:.3f} <0.65 - baseline pop-only is 0.541, need facet-aware embedding (recomputed, not trusting eval_report)"
     )
 
 
@@ -540,15 +540,15 @@ def test_app_data_not_modified():
     """Direction B: instruction says Do not modify any file in /app/data - check integrity"""
     import os
 
-    # Events must exist and have 20000 lines (generated at build)
+    # Events must exist and have 10000 lines (generated at build)
     events_path = "/app/data/events.jsonl"
     assert os.path.exists(events_path), (
         "events.jsonl missing - agent may have deleted /app/data"
     )
     with open(events_path) as f:
         event_lines = sum(1 for _ in f)
-    assert event_lines == 20000, (
-        f"events.jsonl should have 20000 lines, got {event_lines} - do not modify /app/data"
+    assert event_lines == 10000, (
+        f"events.jsonl should have 10000 lines, got {event_lines} - do not modify /app/data"
     )
 
     # Queries must have 500 lines, free-form only

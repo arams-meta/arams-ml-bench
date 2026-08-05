@@ -11,7 +11,7 @@ Note: Full structured queries with city/category/facet/time_window/radius/lat/ln
 Relevance rule (deterministic, no LLM, all must hold):
 1. event city == query city
 2. category match if query specifies category
-3. facet/topic match: event.topic == query.facet (this is the key semantic signal; popularity-only baseline ignores it and fails ~0.27 recall)
+3. facet/topic match: event.topic == query.facet (this is the key semantic signal; popularity-only baseline ignoring facet gets 0.541 recall and is improved by facet-aware retrieval)
 4. start_time within [time_window_start, time_window_end] inclusive
 5. haversine distance <= radius_km
 6. not is_spam AND start_time >= 2026-02-01 cutoff (freshness filter)
@@ -53,7 +53,7 @@ Temporal semantics (deterministic, exact formulas):
   Same ±20 days half-width as train, just +35d in future.
 
 Scoring thresholds (recomputed from hidden /opt/eval):
-- Improved recall@10 >=0.40, lift > baseline+0.08 (baseline ~0.27 pop-only ignoring facet), holdout >=0.25 ratio >=0.4
+- Improved recall@10 >=0.65, lift > baseline+0.08 (baseline 0.541 pop-only ignoring facet), holdout >=0.25 ratio >=0.4
 - Time/geo/dedup/spam/freshness: time <=40%, geo <=20%, dup <=30%, spam <=5%, freshness start_time>=2026-02-01 must be 0%
 - Free-form extraction: city >=0.60, facet >=0.50, category >=0.40
 - Embedding: must use MiniLM, rag_config embedding_model all-MiniLM-L6-v2 and embedding_used true, plus behavioral: facet-match >=60% on retrieved (topic==facet) using MiniLM

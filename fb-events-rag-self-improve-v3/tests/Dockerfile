@@ -1,5 +1,5 @@
 # V3 verifier - simple base + CPU torch pin + pre-baked
-FROM python:3.10-slim
+FROM public.ecr.aws/docker/library/python:3.10.12-slim-bullseye
 
 RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch==2.1.2 && \
     pip install --no-cache-dir \
@@ -16,11 +16,14 @@ RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu 
     pytest-json-report==1.5.0
 
 WORKDIR /app
-RUN mkdir -p /app/data /opt/eval /output /logs/verifier
+RUN mkdir -p /app/data /opt/eval /output /logs/verifier /tests
 
 # Pre-baked: agent-visible + hidden
 COPY data/ /app/data/
 COPY eval/ /opt/eval/
+
+COPY test.sh categorize_failure test_smoke.py test_schema.py test_baseline.py test_main.py test_behavioral.py test_holdout.py /tests/
+RUN chmod +x /tests/test.sh /tests/categorize_failure
 
 RUN ls -lh /app/data/ /opt/eval/ && \
     echo "Verifier must have hidden:" && test -f /opt/eval/queries.jsonl && test -f /opt/eval/events.jsonl && echo "hidden exists good" && \

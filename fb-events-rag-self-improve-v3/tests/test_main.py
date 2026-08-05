@@ -248,8 +248,8 @@ def test_recall_absolute_threshold():
     events, queries, relevance = load_ground_truth()
     assert len(relevance) >= 100, "Relevance empty - hidden generation may have failed"
     improved_recall, _ = compute_improved_recall_from_output(events, queries, relevance)
-    assert improved_recall >= 0.40, (
-        f"Improved recall@10 recomputed {improved_recall:.3f} below absolute threshold 0.40 (free-form, lowered per TBR justification)"
+    assert improved_recall >= 0.65, (
+        f"Improved recall@10 recomputed {improved_recall:.3f} below absolute threshold 0.65 (baseline 0.541 pop-only)"
     )
 
 
@@ -411,6 +411,6 @@ def test_reference_toy():
     events, queries, relevance = load_ground_truth()
     improved_recall, _ = compute_improved_recall_from_output(events, queries, relevance)
     assert retrieved, "Missing retrieved.jsonl"
-    assert improved_recall >= 0.40, (
-        f"Recall too low for non-trivial solution: {improved_recall:.3f} (need >=0.40 free-form, aligned with test_recall_absolute_threshold)"
+    assert improved_recall >= 0.65, (
+        f"Recall too low for non-trivial solution: {improved_recall:.3f} (need >=0.65, aligned with test_recall_absolute_threshold, baseline 0.541)"
     )
