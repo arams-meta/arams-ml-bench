@@ -4,12 +4,21 @@ Oracle implementation - deterministic and grounded in events.jsonl.
 """
 
 try:
-    from ._common import parse_listings, resolve, says_no_results
-except ImportError:
-    from _common import parse_listings, resolve, says_no_results
+    from ._common import (
+    decide,
+    parse_listings,
+    resolve,
+    says_no_results,
+    )
+except ImportError:  # loaded as a loose module rather than a package
+    from _common import (
+    decide,
+    parse_listings,
+    resolve,
+    says_no_results,
+    )
 
-
-def judge(item, events):
+def _deterministic(item, events):
     answer = item.get("agent_answer", "")
     if says_no_results(answer):
         return {
@@ -51,3 +60,13 @@ def judge(item, events):
         "reasoning": "No duplicate clusters, repeats, or flagged-spam events.",
         "verdict": "pass",
     }
+
+
+FOCUS = (
+    "does the answer avoid spam and duplicates - no two listed events sharing a cluster_id, no event listed twice, no is_spam row? Ignore existence, city, date and style."
+)
+
+
+def judge(item, events):
+    """Ask the LLM first; fall back to the deterministic inventory check."""
+    return decide("spam", FOCUS, item, events, _deterministic)

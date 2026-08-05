@@ -5,12 +5,19 @@ is the other three judges' business.
 """
 
 try:
-    from ._common import parse_listings, says_no_results
-except ImportError:
-    from _common import parse_listings, says_no_results
+    from ._common import (
+    decide,
+    parse_listings,
+    says_no_results,
+    )
+except ImportError:  # loaded as a loose module rather than a package
+    from _common import (
+    decide,
+    parse_listings,
+    says_no_results,
+    )
 
-
-def judge(item, events):
+def _deterministic(item, events):
     answer = (item.get("agent_answer") or "").strip()
 
     if says_no_results(answer):
@@ -48,3 +55,13 @@ def judge(item, events):
         "reasoning": f"Names {len(listings)} events, each with venue and date.",
         "verdict": "pass",
     }
+
+
+FOCUS = (
+    "does the answer actually help - naming events with a date, or correctly reporting none? Ignore whether the underlying facts are right."
+)
+
+
+def judge(item, events):
+    """Ask the LLM first; fall back to the deterministic inventory check."""
+    return decide("helpfulness", FOCUS, item, events, _deterministic)

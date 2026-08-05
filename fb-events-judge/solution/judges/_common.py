@@ -96,6 +96,23 @@ def stated_city(listing, cities):
     return tail if tail in cities or " " not in tail else None
 
 
+def decide(dimension, focus, item, events, deterministic):
+    """Ask the LLM for this dimension; fall back to the inventory check.
+
+    The fallback is what makes oracle validation reproducible without API
+    access. It is not a shortcut: both paths answer the same question against
+    the same inventory.
+    """
+    try:
+        from ._llm import ask
+    except ImportError:
+        from _llm import ask
+    verdict = ask(dimension, focus, item, events)
+    if verdict is not None:
+        return verdict
+    return deterministic(item, events)
+
+
 def in_window(date, filters):
     if not date:
         return True

@@ -6,12 +6,21 @@ solution/judge_llm.py for the prompt-based version.
 """
 
 try:
-    from ._common import parse_listings, resolve, says_no_results
+    from ._common import (
+    decide,
+    parse_listings,
+    resolve,
+    says_no_results,
+    )
 except ImportError:  # loaded as a loose module rather than a package
-    from _common import parse_listings, resolve, says_no_results
+    from _common import (
+    decide,
+    parse_listings,
+    resolve,
+    says_no_results,
+    )
 
-
-def judge(item, events):
+def _deterministic(item, events):
     answer = item.get("agent_answer", "")
     if says_no_results(answer):
         return {
@@ -41,3 +50,13 @@ def judge(item, events):
         "reasoning": f"All {len(listings)} listed events resolve to inventory rows.",
         "verdict": "pass",
     }
+
+
+FOCUS = (
+    "does every event the answer lists actually exist in the inventory (same title and venue)? Ignore city, date, spam and style."
+)
+
+
+def judge(item, events):
+    """Ask the LLM first; fall back to the deterministic inventory check."""
+    return decide("accuracy", FOCUS, item, events, _deterministic)

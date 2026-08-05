@@ -5,25 +5,26 @@ Oracle implementation - deterministic and grounded in events.jsonl.
 
 try:
     from ._common import (
-        parse_listings,
-        resolve,
-        says_no_results,
-        in_window,
-        stated_city,
-        answer_cities,
+    decide,
+    parse_listings,
+    resolve,
+    says_no_results,
+    in_window,
+    stated_city,
+    answer_cities,
     )
-except ImportError:
+except ImportError:  # loaded as a loose module rather than a package
     from _common import (
-        parse_listings,
-        resolve,
-        says_no_results,
-        in_window,
-        stated_city,
-        answer_cities,
+    decide,
+    parse_listings,
+    resolve,
+    says_no_results,
+    in_window,
+    stated_city,
+    answer_cities,
     )
 
-
-def judge(item, events):
+def _deterministic(item, events):
     answer = item.get("agent_answer", "")
     filters = item.get("query_filters", {}) or {}
     want_city = filters.get("city")
@@ -69,3 +70,13 @@ def judge(item, events):
         "reasoning": f"All listed events match city {want_city} and the requested window.",
         "verdict": "pass",
     }
+
+
+FOCUS = (
+    "does every listed event resolve to a row whose city equals the requested city, with its date inside the requested window? Ignore existence, spam and style."
+)
+
+
+def judge(item, events):
+    """Ask the LLM first; fall back to the deterministic inventory check."""
+    return decide("filter", FOCUS, item, events, _deterministic)
