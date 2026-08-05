@@ -1,7 +1,7 @@
 version = "1.0"
 
 [task]
-name = "codimango/fb-events-llm-judge-eval"
+name = "codimango/fb-events-judge"
 description = "LLM-as-a-judge eval framework for FB Events agent answers - judges faithfulness, filter adherence, spam/dedup"
 authors = [{ name = "Aram", email = "arams@meta.com" }]
 keywords = ["ml", "llm", "llm-as-judge", "eval", "facebook-events"]
