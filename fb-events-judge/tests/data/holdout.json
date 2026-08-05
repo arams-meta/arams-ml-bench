@@ -105,10 +105,8 @@
       "lat": 40.00941,
       "lng": -75.141918
     },
-    "agent_answer": "Here are some Community events near Philadelphia: Neighborhood Potluck - Grand Theater at Grand Theater on 2026-04-02; Neighborhood Potluck - Grand Theater (Official) at Grand Theater on 2026-04-02; Neighborhood Potluck - Grand Theater 2026 at Grand Theater on 2026-04-02.",
+    "agent_answer": "Here are some Community events near Philadelphia: Neighborhood Potluck - Grand Theater at Grand Theater on 2026-04-02.",
     "ground_truth_ids": [
-      "evt_007843",
-      "evt_007844",
       "evt_007845",
       "evt_013975",
       "evt_016075"
@@ -133,7 +131,6 @@
     "agent_answer": "Here are events: Rooftop Party - Warehouse 22 at Warehouse 22 on 2026-04-28 and Rooftop Party - Warehouse 22 at Warehouse 22 on 2026-04-28. Both in Seattle.",
     "ground_truth_ids": [
       "evt_001702",
-      "evt_004479",
       "evt_004480",
       "evt_010327",
       "evt_011976"
@@ -177,7 +174,6 @@
     "agent_answer": "Found Music events: Acoustic Evening with The Midnight Signals in Berlin on 2026-07-04.",
     "ground_truth_ids": [
       "evt_010240",
-      "evt_010242",
       "evt_016761"
     ],
     "flaw_type": "wrong_city",
@@ -223,8 +219,6 @@
     "agent_answer": "Here are events: Rooftop Party - Central Park at Central Park on 2026-06-12 and Rooftop Party - Central Park at Central Park on 2026-06-12. Both in Seattle.",
     "ground_truth_ids": [
       "evt_005442",
-      "evt_009097",
-      "evt_009098",
       "evt_009099",
       "evt_012229"
     ],
