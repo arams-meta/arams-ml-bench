@@ -1,63 +1,140 @@
 # FB Events Multi-Judge LLM-as-Judge Eval
 
 ## Description
-Product-specific eval framework for FB Events agent answers. Agents generate natural language answers to FB Events queries like "best Tech events near Austin next week" with geo/time/category filters. Task: build panel of 4 specialized LLM-as-a-judge evaluators scoring for real product risks: hallucinated events not in inventory, wrong city/category/time, spam/duplicate cluster, unhelpfulness.
+Product-specific eval framework for FB Events agent answers. Agents generate natural
+language answers to FB Events queries like "best Tech events near Austin next week"
+with geo/time/category filters. Task: build a panel of 4 specialized LLM-as-a-judge
+evaluators scoring for real product risks: events not in inventory, wrong
+city/category/time, spam and duplicate clusters, unhelpfulness.
 
-Reuses synthetic FB Events inventory (events.jsonl: id, title, description, city, venue, lat/lng, start_time, is_spam, cluster_id, 1000 rows) + 20 visible queries (10 good flaw=none, 10 bad injected flaws: hallucination fake title "Secret Underground Rave at Hidden Bunker", spam duplicate cluster_id is_spam=true, wrong_time outside time_window) + 20 holdout unseen. Naive approach (score all 3 or string-match) fails margin and correlation.
+## Data
+- `data/events.jsonl` — 649 synthetic inventory rows. Fields: `id`, `title`,
+  `description`, `category`, `city`, `venue`, `lat`, `lng`, `start_time`, `end_time`,
+  `popularity`, `is_spam`, `cluster_id`.
+- `data/judge_dataset.json` — 20 visible query/answer pairs, no labels.
+- `tests/data/judge_dataset_with_scores.json` — the same 20 with hidden
+  `category`, `flaw_type`, `human_score`. Verifier only.
+- `tests/data/holdout.json` — 20 unseen, same label schema.
 
-Dataset synthetic, human-authored + Llama-generated with human review (no 3P tokens), baked into Docker per provenance rules. Eval via Llama API at OPENAI_API_BASE temperature 0.
+Flaw distribution, identical in both the visible set and the holdout:
+
+| flaw_type | count | human_score |
+|---|---|---|
+| none (good) | 10 | 5 |
+| spam | 5 | 2 |
+| wrong_city | 5 | 2 |
+
+`human_score` is binary (5 or 2). There are **no** `hallucination` and **no**
+`wrong_time` items in either set, though `instruction.md` and `reference_toy.json`
+both describe them — see Known Limitations.
+
+Dataset synthetic, human-authored + Llama-generated with human review (no 3P tokens),
+baked into Docker per provenance rules.
 
 ## Capability Tested
-- LLM reasoning over product constraints (geo, time, category, dedup, spam)
+- Reasoning over product constraints (geo, time, category, dedup, spam)
 - Tool fluency: OpenAI-compatible Llama API, prompt engineering for 4 judges
-- End-to-end eval framework: judges/ folder, orchestrator, aggregation, CSV
-- Anti-gaming: holdout generalization, correlation vs human
+- End-to-end eval framework: `judges/` modules, orchestrator, aggregation, CSV
+- Generalization: correlation against hidden human scores
 
 ## Scoring
-Binary reward_type=binary for Codimango, multi-judge granularity for diagnostics.
-Main gate: final_score = round(0.35*accuracy + 0.30*filter + 0.20*spam + 0.15*helpfulness), directional avg_good - avg_bad >=1.0, correlation final_score vs human_score >=0.6
-Sub-gates: hallucination accuracy_score<=2, spam spam_score<=2, wrong_time filter_score<=2, good all sub-scores >=4 final 5
-Logs: baseline_score.txt (margin), holdout_score.txt (corr), ctrf.json
+Binary `reward_type=binary`. Reward is gated by `tests/test_main.py`.
 
-## Completion Rates
-| Model | Pass | Median wall-clock (s) | Failure modes |
-|---|---|---|---|
-| Oracle (perfect using human_score) | 3/3 | 2s | n/a |
-| Heuristic best-effort (rule-based, no LLM) | 20/20 visible PASS 20/20 holdout PASS | 1s | margin 2.0 visible /1.6 holdout corr 0.915/0.884 |
-| Llama-3.3-70B-Instruct as judge (expected) | TBD | 60-90s for 20 calls | Should beat heuristic |
-| Avocado/Opus as agent building judge | TBD |  |  |
+Aggregation: `final_score = round(0.35*accuracy + 0.30*filter + 0.20*spam + 0.15*helpfulness)`
 
-Oracle: good=5/5/5/5 final5, bad halluc=1/2/4/2 final2, bad spam=4/4/1/2 final2
+Gates:
+- directional `avg_good - avg_bad >= 1.0`
+- correlation of `final_score` vs hidden `human_score` `>= 0.6`
+- sub-gates: hallucination `accuracy_score <= 2`, spam `spam_score <= 2`,
+  wrong_time/wrong_city `filter_score <= 3`
+- no hardcoding: `>= 2` unique scores and std `> 0.5`
 
-## Model Analysis
-Oracle uses human_score directly ceiling margin 3.0 corr 1.0.
-Heuristic best-effort: no LLM, checks fake titles list, wrong city mentions, spam markers - Visible margin 2.0 (good 5.0 vs bad 3.0) corr 0.915 catches 5/5 halluc faith fail 5/5 spam fail. Holdout margin 1.6 corr 0.884 generalizes.
-Why naive fails: scoring all 3 margin~0 corr0 fails directional; string matching misses filter adherence and spam/dedup; hardcoding visible ids fails holdout.
-Trajectory: spec-unclear builds single judge only fails multi-judge presence; capability-gap hardcodes fails corr; infra-masked >50 examples timeout.
+Logs written to `/logs/verifier/`: `baseline_score.txt` (margin),
+`holdout_score.txt` (correlation), `ctrf.json`, `reward.txt`.
 
-## Anti-Cheating Analysis
-- Holdout 20 unseen queries catches hardcoded ids
-- Correlation >=0.6 prevents random
-- Reference anchor 3 toy cases (good 5+-1 halluc 1+-1)
-- Faithfulness via hallucinated titles not in events.jsonl
-- Filter adherence city/category/time
-- Spam/dedup cluster_id duplicate Weekend Soccer League + Official same cluster_0
-- Schema id,final_score,accuracy_score,filter_score,spam_score,helpfulness_score,reasoning 1-5
-- No test file modification via test.sh gating
+## Oracle behaviour
+
+Measured on a `--no-cache` build of `python:3.10-slim`, commit `472d813`:
+
+```
+reward=1   failure_mode=none
+avg_good=5.00  avg_bad=4.00  margin=1.00
+corr=1.000
+test_main: 8/8 passed
+```
+
+Per-dimension, `accuracy / filter / spam / helpfulness -> final`:
+
+| item | scores | final |
+|---|---|---|
+| good | 5 / 5 / 5 / 5 | 5 |
+| bad, spam | 5 / 5 / 1 / 5 | 4 |
+| bad, wrong_city | 5 / 2 / 5 / 5 | 4 |
+
+The oracle is honest: it computes verdicts from `events.jsonl` and the answer text
+only. It does not read `human_score`, `flaw_type`, or `category`. The hidden-label
+oracle described in earlier revisions of this file was removed in `632427a`.
+
+Each judge calls the LLM first via `solution/judges/_llm.py` and falls back to a
+deterministic inventory check when no API key is configured, which is what keeps
+oracle validation reproducible without API access.
 
 ## Reproducibility
-Seed 42, PYTHONHASHSEED=42, task.toml seed 42 deterministic true, wall_clock_sec.txt peak_memory_mb.txt, deterministic templates gen_realistic_event_answers.py, Llama temp 0 Llama-3.3-70B-Instruct via api.llama.com, Oracle 3/3 validated locally margin 2.0/1.6 corr 0.915/0.884
+Seed 42, `PYTHONHASHSEED=42`, `task.toml` `seed = 42`, `deterministic = true`.
+`environment/requirements.txt` is fully pinned including transitive deps, resolved
+with `uv pip compile --python-version 3.10` to match `python:3.10-slim`.
+LLM path uses temperature 0 against `Llama-3.3-70B-Instruct`.
+
+## Anti-Cheating Measures
+- Human scores and flaw labels live only in `tests/data/`, never copied into the image
+- Correlation gate rejects constant or random scoring
+- `test_no_hardcoded_scores` requires score variance
+- Reference anchors: 3 toy cases in `data/reference_toy.json`, +-1 tolerance
+
+## Known Limitations
+
+Tracked, not yet fixed. Listed here so reviewers do not have to rediscover them.
+
+1. **Agent-visible ids encode the hidden labels.** `data/judge_dataset.json` ships
+   ids of the form `q_00327_good`, `q_00057_bad_spam`, `q_00379_bad_wrong_city`, and
+   the hidden label files key off exactly those ids. A `judgments.csv` scored purely
+   by substring match on the id, plus two stub files in `/app/judges/`, passes the
+   full gating suite with `margin=3.00` and `corr=1.000`. Same leak in
+   `holdout.json` and `reference_toy.json`. Fix requires re-keying to opaque ids.
+2. **The LLM requirement is not enforced.** `instruction.md` requires each judge to
+   call the LLM API, but no test verifies it, and a purely rule-based panel passes.
+   Nothing in the Dockerfile or `task.toml` declares `OPENAI_API_BASE` /
+   `OPENAI_API_KEY`, so the LLM path is not exercised during validation.
+3. **The holdout does not gate.** `tests/test_holdout.py` runs only after
+   `reward.txt` is already `1`, and with `|| true`. It reads an optional
+   `/output/holdout_judgments.csv` rather than re-running the agent's judges, so
+   `instruction.md`'s claim that the same judge logic runs on holdout in the
+   verifier is not accurate.
+4. **Two of four judges have no test signal.** With no `hallucination` items in the
+   ground truth, `test_faithfulness_detection` iterates an empty set and passes
+   vacuously, leaving the 0.35-weighted accuracy judge unexercised.
+   `helpfulness_score` is only range-checked. `test_reference.py` is likewise
+   vacuous: the toy ids are not present in `judgments.csv`.
+5. **No margin headroom.** The oracle sits exactly on the `margin >= 1.0` gate.
+   A single failing sub-judge at weight 0.20-0.35 can only pull the weighted mean
+   from 5.0 to 4.1-4.2, which rounds to 4, so every bad answer scores 4.
+6. **Binary human scores.** `human_score` is only ever 5 or 2, so the
+   `corr >= 0.6` gate measures the same separation as the directional margin gate.
+7. **Deterministic judges are parser-coupled.** `solution/judges/_common.py`
+   resolves listings by regex against the generated answer phrasing, so it is
+   sensitive to answer format changes.
 
 ## Files
-- data/judge_dataset.json 20 visible product-specific Q/A
-- tests/data/holdout.json 20 holdout
-- data/events.jsonl 1000 inventory
-- data/reference_toy.json 3 hand-crafted
-- references/rubric.md single + rubric_multi_judge.md 4-judge detailed
-- solution/solve.sh oracle multi-judge
-- solution/judge_llm.py reference real Llama judge
-- judges/ oracle judges stubs
-- tests/test.sh orchestrator
-- tests/test_main.py directional correlation faithfulness/spam/filter multi-judge presence
-- gen_realistic_event_answers.py deterministic product-specific generator compliant no 3P
-- gen_judge_data.py Llama API version for natural phrasing
+- `data/judge_dataset.json` — 20 visible query/answer pairs
+- `data/events.jsonl` — 649-row inventory
+- `data/reference_toy.json` — 3 hand-crafted anchors
+- `references/rubric.md`, `references/rubric_multi_judge.md` — single and 4-judge rubrics
+- `tests/data/holdout.json`, `tests/data/judge_dataset_with_scores.json` — hidden labels
+- `solution/solve.sh` — oracle: installs `/app/judges/`, writes `/app/judge.py`, runs the panel
+- `solution/judges/` — the four judge modules plus `_llm.py` and `_common.py`
+- `solution/judge_llm.py` — reference prompt-based Llama judge
+- `tests/test.sh` — verifier orchestrator
+- `tests/test_main.py` — directional, correlation, per-flaw detection, multi-judge presence
+- `gen_realistic_event_answers.py` — deterministic answer generator
+- `gen_judge_data.py` — Llama API generator for natural phrasing
+- `eval_best_effort.py` — author-side scratch evaluator, not part of grading
