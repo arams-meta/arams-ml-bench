@@ -1,7 +1,8 @@
 # V3 verifier - simple base + CPU torch pin + pre-baked
 FROM public.ecr.aws/docker/library/python:3.10.12-slim-bullseye
 
-RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch==2.1.2 && \
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu \
+    torch==2.1.2 torchvision==0.16.2 && \
     pip install --no-cache-dir \
     sentence-transformers==2.2.2 \
     transformers==4.35.2 \
