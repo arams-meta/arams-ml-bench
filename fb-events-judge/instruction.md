@@ -1,7 +1,7 @@
 You are to build a multi-judge LLM-as-a-judge eval framework for FB Events agent answers - panel of 4 specialized judges.
 
 Context:
-- Event inventory lives in /app/data/events.jsonl (id, title, description, city, venue, category, start_time, is_spam, cluster_id, 1000 rows)
+- Event inventory lives in /app/data/events.jsonl (id, title, description, category, city, venue, lat, lng, start_time, end_time, popularity, is_spam, cluster_id, 649 rows)
 - User queries + agent answers to judge are in /app/data/judge_dataset.json (20 items: user_question, query_filters, agent_answer, ground_truth_ids) - NO human_score/flaw_type here (hidden from agent)
 - Rubrics in /app/references/rubric.md (single judge) and /app/references/rubric_multi_judge.md (detailed multi-judge) - read both carefully
 - Reference toy examples in /app/data/reference_toy.json (3 hand-crafted)

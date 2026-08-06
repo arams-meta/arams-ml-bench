@@ -113,8 +113,8 @@ def test_faithfulness_detection():
         if r.get("flaw_type") == "hallucination":
             sid = r["id"]
             if sid in judg_map:
-                assert judg_map[sid] <= 3, (
-                    f"Hallucinated {sid} should score <=3 for {acc_col}, got {judg_map[sid]}"
+                assert judg_map[sid] <= 2, (
+                    f"Hallucinated {sid} should score <=2 for {acc_col}, got {judg_map[sid]}"
                 )
 
 
@@ -128,8 +128,8 @@ def test_spam_detection():
         if r.get("flaw_type") == "spam":
             sid = r["id"]
             if sid in judg_map:
-                assert judg_map[sid] <= 3, (
-                    f"Spam {sid} should score <=3 for {spam_col}, got {judg_map[sid]}"
+                assert judg_map[sid] <= 2, (
+                    f"Spam {sid} should score <=2 for {spam_col}, got {judg_map[sid]}"
                 )
 
 
@@ -180,10 +180,16 @@ def test_multi_judge_presence():
         ]
         assert len(present) >= 3, f"Multi-judge needs >=3 sub-scores, got {present}"
 
+
 def test_judges_files_exist():
     """Check that agent created 4 judge modules per instruction (multi-judge panel)"""
     import pathlib
-    base_paths = [pathlib.Path("/app/judges"), pathlib.Path("judges"), pathlib.Path("fb-events-judge/judges")]
+
+    base_paths = [
+        pathlib.Path("/app/judges"),
+        pathlib.Path("judges"),
+        pathlib.Path("fb-events-judge/judges"),
+    ]
     for base in base_paths:
         if base.exists():
             files = list(base.glob("*.py"))
@@ -191,7 +197,12 @@ def test_judges_files_exist():
             assert len(files) >= 2, f"Expected >=2 judge files in {base}, got {files}"
             return
     # If not in /app/judges, check /app/judge.py orchestrator exists
-    for p in [pathlib.Path("/app/judge.py"), pathlib.Path("judges/judge.py"), pathlib.Path("fb-events-judge/judge.py"), pathlib.Path("judge.py")]:
+    for p in [
+        pathlib.Path("/app/judge.py"),
+        pathlib.Path("judges/judge.py"),
+        pathlib.Path("fb-events-judge/judge.py"),
+        pathlib.Path("judge.py"),
+    ]:
         if p.exists():
             return
     # For oracle run, judges are created in solution/judges - allow that for oracle but warn

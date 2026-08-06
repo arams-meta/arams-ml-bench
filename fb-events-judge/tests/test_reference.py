@@ -26,7 +26,8 @@ def test_reference_toy():
         toy = json.load(f)
 
     df = pd.read_csv("/output/judgments.csv")
-    df_map = dict(zip(df["id"], df["score"]))
+    score_col = "final_score" if "final_score" in df.columns else "score"
+    df_map = dict(zip(df["id"], df[score_col]))
 
     for t in toy:
         tid = t["id"]
