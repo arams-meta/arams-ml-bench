@@ -29,7 +29,8 @@ def test_holdout_generalization():
     hj_path = pathlib.Path("/output/holdout_judgments.csv")
     if hj_path.exists():
         df = pd.read_csv(hj_path)
-        m = dict(zip(df["id"], df["score"]))
+        score_col = "final_score" if "final_score" in df.columns else "score"
+        m = dict(zip(df["id"], df[score_col]))
         y_true = [r["human_score"] for r in holdout if r["id"] in m]
         y_pred = [m[r["id"]] for r in holdout if r["id"] in m]
         if len(y_true) >= 4:
