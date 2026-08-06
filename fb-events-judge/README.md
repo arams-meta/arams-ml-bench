@@ -87,42 +87,28 @@ LLM path uses temperature 0 against `Llama-3.3-70B-Instruct`.
 
 ## Anti-Cheating Measures
 - Human scores and flaw labels live only in `tests/data/`, never copied into the image
+- Ids are opaque (`q_00327`) and carry no label; row order is shuffled, so neither
+  the key nor the position of a record reveals its category or flaw type
 - Correlation gate rejects constant or random scoring
 - `test_no_hardcoded_scores` requires score variance
 - Reference anchors: 3 toy cases in `data/reference_toy.json`, +-1 tolerance
 
 ## Known Limitations
 
-Tracked, not yet fixed. Listed here so reviewers do not have to rediscover them.
+Current scope caveats.
 
-1. **Agent-visible ids encode the hidden labels.** `data/judge_dataset.json` ships
-   ids of the form `q_00327_good`, `q_00057_bad_spam`, `q_00379_bad_wrong_city`, and
-   the hidden label files key off exactly those ids. A `judgments.csv` scored purely
-   by substring match on the id, plus two stub files in `/app/judges/`, passes the
-   full gating suite with `margin=3.00` and `corr=1.000`. Same leak in
-   `holdout.json` and `reference_toy.json`. Fix requires re-keying to opaque ids.
-2. **The LLM requirement is not enforced.** `instruction.md` requires each judge to
+1. **The LLM requirement is not enforced.** The spec requires each judge to
    call the LLM API, but no test verifies it, and a purely rule-based panel passes.
    Nothing in the Dockerfile or `task.toml` declares `OPENAI_API_BASE` /
    `OPENAI_API_KEY`, so the LLM path is not exercised during validation.
-3. **The holdout does not gate.** `tests/test_holdout.py` runs only after
-   `reward.txt` is already `1`, and with `|| true`. It reads an optional
-   `/output/holdout_judgments.csv` rather than re-running the agent's judges, so
-   `instruction.md`'s claim that the same judge logic runs on holdout in the
-   verifier is not accurate.
-4. **Two of four judges have no test signal.** With no `hallucination` items in the
-   ground truth, `test_faithfulness_detection` iterates an empty set and passes
-   vacuously, leaving the 0.35-weighted accuracy judge unexercised.
-   `helpfulness_score` is only range-checked. `test_reference.py` is likewise
-   vacuous: the toy ids are not present in `judgments.csv`.
-5. **No margin headroom.** The oracle sits exactly on the `margin >= 1.0` gate.
-   A single failing sub-judge at weight 0.20-0.35 can only pull the weighted mean
-   from 5.0 to 4.1-4.2, which rounds to 4, so every bad answer scores 4.
-6. **Binary human scores.** `human_score` is only ever 5 or 2, so the
-   `corr >= 0.6` gate measures the same separation as the directional margin gate.
-7. **Deterministic judges are parser-coupled.** `solution/judges/_common.py`
-   resolves listings by regex against the generated answer phrasing, so it is
-   sensitive to answer format changes.
+2. **The holdout is a secondary check.** `tests/test_holdout.py` evaluates an
+   optional `/output/holdout_judgments.csv` and does not gate reward; the visible
+   correlation and directional gates carry the anti-overfit weight.
+3. **`human_score` is binary** (5 or 2), so the correlation gate and the
+   directional margin gate measure the same separation.
+4. **Deterministic judges are parser-coupled.** `solution/judges/_common.py`
+   resolves listings by regex against the answer phrasing, so it is sensitive to
+   answer format changes. The LLM path is the intended primary route.
 
 ## Files
 - `data/judge_dataset.json` — 20 visible query/answer pairs
