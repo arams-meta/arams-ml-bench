@@ -23,6 +23,7 @@ cat > /app/judge.py <<'PYEOF'
 
 import csv
 import json
+import os
 import pathlib
 import sys
 
@@ -83,9 +84,22 @@ def load_events():
         return [json.loads(line) for line in f if line.strip()]
 
 
+def dataset_path():
+    """Input items. JUDGE_DATASET lets the verifier re-run this panel over a
+    held-out set with the same schema; unset, it is the visible dataset."""
+    override = os.getenv("JUDGE_DATASET")
+    if override:
+        return pathlib.Path(override)
+    return _first_existing("/app/data/judge_dataset.json", "data/judge_dataset.json")
+
+
+def output_path():
+    """Where judgments go. JUDGE_OUTPUT pairs with JUDGE_DATASET."""
+    return pathlib.Path(os.getenv("JUDGE_OUTPUT", "/output/judgments.csv"))
+
+
 def load_dataset():
-    path = _first_existing("/app/data/judge_dataset.json", "data/judge_dataset.json")
-    with open(path) as f:
+    with open(dataset_path()) as f:
         return json.load(f)
 
 
@@ -103,7 +117,7 @@ def main():
     events = load_events()
     dataset = load_dataset()
 
-    out = pathlib.Path("/output/judgments.csv")
+    out = output_path()
     out.parent.mkdir(parents=True, exist_ok=True)
     with open(out, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=FIELDNAMES)

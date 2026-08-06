@@ -56,9 +56,9 @@ if [ -f /tests/test_baseline.py ]; then
   fi
 fi
 
-# Main scoring
+# Main scoring (visible + holdout gate)
 set +e
-pytest /tests/test_main.py \
+pytest /tests/test_main.py /tests/test_holdout.py \
   --json-report --json-report-file=/logs/verifier/ctrf.json \
   -v --tb=short \
   2> /logs/verifier/stderr.txt
@@ -70,11 +70,6 @@ if [ $EXIT -ne 0 ]; then
   echo 0 > /logs/verifier/reward.txt
 else
   echo 1 > /logs/verifier/reward.txt
-  if [ -f /tests/test_holdout.py ]; then
-    set +e
-    pytest /tests/test_holdout.py -v --tb=short 2>&1 | tee -a /logs/verifier/smoke_stderr.txt || true
-    set -e
-  fi
 fi
 
 END_SEC=$(date +%s)

@@ -76,9 +76,9 @@ def test_directional_good_gt_bad():
     margin = avg_good - avg_bad
     with open("/logs/verifier/baseline_score.txt", "w") as f:
         f.write(f"avg_good={avg_good:.2f} avg_bad={avg_bad:.2f} margin={margin:.2f}\n")
-    assert (
-        margin >= 0.8
-    ), f"Directional fail: good should beat bad by >=0.8, got margin={margin:.2f}"
+    assert margin >= 0.8, (
+        f"Directional fail: good should beat bad by >=0.8, got margin={margin:.2f}"
+    )
 
 
 def test_correlation_with_human():
@@ -115,9 +115,9 @@ def test_faithfulness_detection():
         if r.get("flaw_type") == "hallucination":
             sid = r["id"]
             if sid in judg_map:
-                assert (
-                    judg_map[sid] <= 2
-                ), f"Hallucinated {sid} should score <=2 for {acc_col}, got {judg_map[sid]}"
+                assert judg_map[sid] <= 2, (
+                    f"Hallucinated {sid} should score <=2 for {acc_col}, got {judg_map[sid]}"
+                )
 
 
 def test_spam_detection():
@@ -130,9 +130,9 @@ def test_spam_detection():
         if r.get("flaw_type") == "spam":
             sid = r["id"]
             if sid in judg_map:
-                assert (
-                    judg_map[sid] <= 2
-                ), f"Spam {sid} should score <=2 for {spam_col}, got {judg_map[sid]}"
+                assert judg_map[sid] <= 2, (
+                    f"Spam {sid} should score <=2 for {spam_col}, got {judg_map[sid]}"
+                )
 
 
 def test_filter_detection():
@@ -145,9 +145,9 @@ def test_filter_detection():
         if r.get("flaw_type") in ["wrong_time", "wrong_city"]:
             sid = r["id"]
             if sid in judg_map:
-                assert (
-                    judg_map[sid] <= 3
-                ), f"Filter flaw {sid} should score <=3 for {filt_col}, got {judg_map[sid]}"
+                assert judg_map[sid] <= 3, (
+                    f"Filter flaw {sid} should score <=3 for {filt_col}, got {judg_map[sid]}"
+                )
 
 
 def test_no_hardcoded_scores():
@@ -156,9 +156,9 @@ def test_no_hardcoded_scores():
     uniq = judg[score_col].nunique()
     assert uniq >= 2, f"All same score {uniq} - hardcoded"
     # Strengthened: need standard deviation >0.35 to defeat 2-constant bypass
-    assert (
-        float(judg[score_col].std()) > 0.35
-    ), f"Std too low {float(judg[score_col].std()):.2f} - likely hardcoded"
+    assert float(judg[score_col].std()) > 0.35, (
+        f"Std too low {float(judg[score_col].std()):.2f} - likely hardcoded"
+    )
 
 
 def test_multi_judge_presence():
@@ -169,7 +169,7 @@ def test_multi_judge_presence():
         for c in ["accuracy_score", "filter_score", "spam_score", "helpfulness_score"]
     )
     if has_multi:
-        # Should have at least 3 of them
+        # All four sub-score columns must be present
         present = [
             c
             for c in [
@@ -180,7 +180,9 @@ def test_multi_judge_presence():
             ]
             if c in judg.columns
         ]
-        assert len(present) >= 3, f"Multi-judge needs >=3 sub-scores, got {present}"
+        assert len(present) >= 4, (
+            f"Multi-judge requires all 4 sub-scores, got {present}"
+        )
 
 
 def test_judges_files_exist():
@@ -194,19 +196,9 @@ def test_judges_files_exist():
     ]
     for base in base_paths:
         if base.exists():
-            files = list(base.glob("*.py"))
-            # Should have at least 3 judge files
-            assert len(files) >= 2, f"Expected >=2 judge files in {base}, got {files}"
+            files = [f for f in base.glob("*.py") if f.name != "__init__.py"]
+            assert len(files) >= 4, f"Expected >=4 judge files in {base}, got {files}"
             return
-    # If not in /app/judges, check /app/judge.py orchestrator exists
-    for p in [
-        pathlib.Path("/app/judge.py"),
-        pathlib.Path("judges/judge.py"),
-        pathlib.Path("fb-events-judge/judge.py"),
-        pathlib.Path("judge.py"),
-    ]:
-        if p.exists():
-            return
-    # For oracle run, judges are created in solution/judges - allow that for oracle but warn
-    # This test is informational for agent runs, not gating for oracle
-    print("No /app/judges found - might be oracle run, skipping file existence check")
+    assert False, (
+        "No /app/judges directory found with 4 judge modules; expected 4 specialized judges per instruction"
+    )
