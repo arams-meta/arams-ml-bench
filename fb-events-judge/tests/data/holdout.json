@@ -1,5 +1,77 @@
 [
   {
+    "id": "q_00069",
+    "query_id": "q_00069",
+    "user_question": "what's happening in Seattle next month",
+    "query_filters": {
+      "city": "Seattle",
+      "category": "Nightlife",
+      "time_window_start": "2026-06-10T00:00:00",
+      "time_window_end": "2026-06-15T23:59:00",
+      "radius_km": 20,
+      "lat": 47.586092,
+      "lng": -122.327279
+    },
+    "agent_answer": "Here are events: Rooftop Party - Central Park at Central Park on 2026-06-12 and Rooftop Party - Central Park at Central Park on 2026-06-12. Both in Seattle.",
+    "ground_truth_ids": [
+      "evt_005442",
+      "evt_009099",
+      "evt_012229"
+    ],
+    "flaw_type": "spam",
+    "human_score": 2,
+    "category": "bad"
+  },
+  {
+    "id": "q_00004",
+    "query_id": "q_00004",
+    "user_question": "what's happening in New York next month",
+    "query_filters": {
+      "city": "New York",
+      "category": "Arts",
+      "time_window_start": "2026-05-18T00:00:00",
+      "time_window_end": "2026-05-23T23:59:00",
+      "radius_km": 35,
+      "lat": 40.767994,
+      "lng": -74.077773
+    },
+    "agent_answer": "Here are some Arts events near New York: Film Community Expo at Skyline Rooftop at Civic Auditorium on 2026-05-23; Film Screening Meetup: City Hall Showcase at City Hall on 2026-05-22; Painting Night Market at City Hall on 2026-05-20.",
+    "ground_truth_ids": [
+      "evt_005582",
+      "evt_008796",
+      "evt_011911",
+      "evt_011951",
+      "evt_019271"
+    ],
+    "flaw_type": "hallucination",
+    "human_score": 2,
+    "category": "bad"
+  },
+  {
+    "id": "q_00020",
+    "query_id": "q_00020",
+    "user_question": "weekend Arts in Miami",
+    "query_filters": {
+      "city": "Miami",
+      "category": "Arts",
+      "time_window_start": "2026-05-23T00:00:00",
+      "time_window_end": "2026-05-29T23:59:00",
+      "radius_km": 8,
+      "lat": 25.733304,
+      "lng": -80.234836
+    },
+    "agent_answer": "Here are events: Miami Film Screening Walk at Sunset Lounge on 2026-05-23 and Miami Film Screening Walk at Sunset Lounge on 2026-05-23. Both in Miami.",
+    "ground_truth_ids": [
+      "evt_004505",
+      "evt_009442",
+      "evt_012570",
+      "evt_013255"
+    ],
+    "flaw_type": "spam",
+    "human_score": 2,
+    "category": "bad"
+  },
+  {
     "id": "q_00043",
     "query_id": "q_00043",
     "user_question": "Sports events this weekend in Miami",
@@ -25,147 +97,6 @@
     "category": "bad"
   },
   {
-    "id": "q_00025",
-    "query_id": "q_00025",
-    "user_question": "things to do next month in Seattle",
-    "query_filters": {
-      "city": "Seattle",
-      "category": "Nightlife",
-      "time_window_start": "2026-04-23T00:00:00",
-      "time_window_end": "2026-04-28T23:59:00",
-      "radius_km": 25,
-      "lat": 47.612224,
-      "lng": -122.347064
-    },
-    "agent_answer": "Here are events: Rooftop Party - Warehouse 22 at Warehouse 22 on 2026-04-28 and Rooftop Party - Warehouse 22 at Warehouse 22 on 2026-04-28. Both in Seattle.",
-    "ground_truth_ids": [
-      "evt_001702",
-      "evt_004480",
-      "evt_010327",
-      "evt_011976"
-    ],
-    "flaw_type": "spam",
-    "human_score": 2,
-    "category": "bad"
-  },
-  {
-    "id": "q_00035",
-    "query_id": "q_00035",
-    "user_question": "things to do next month in Philadelphia",
-    "query_filters": {
-      "city": "Philadelphia",
-      "category": "Nightlife",
-      "time_window_start": "2026-07-02T00:00:00",
-      "time_window_end": "2026-07-07T23:59:00",
-      "radius_km": 20,
-      "lat": 39.929132,
-      "lng": -75.159131
-    },
-    "agent_answer": "Here are some Nightlife events near Philadelphia: Philadelphia Nightlife Crawl @ City Hall at City Hall on 2026-07-03; Rooftop Party - Grand Theater at Grand Theater on 2026-07-02; DJ Night at Riverside Hall on 2026-07-05.",
-    "ground_truth_ids": [
-      "evt_004934",
-      "evt_005811",
-      "evt_007569",
-      "evt_009237",
-      "evt_019727"
-    ],
-    "flaw_type": "none",
-    "human_score": 5,
-    "category": "good"
-  },
-  {
-    "id": "q_00071",
-    "query_id": "q_00071",
-    "user_question": "what's happening in Philadelphia next week",
-    "query_filters": {
-      "city": "Philadelphia",
-      "category": "Community",
-      "time_window_start": "2026-03-28T00:00:00",
-      "time_window_end": "2026-04-02T23:59:00",
-      "radius_km": 30,
-      "lat": 40.00941,
-      "lng": -75.141918
-    },
-    "agent_answer": "Here are some Community events near Philadelphia: Neighborhood Potluck - Grand Theater at Grand Theater on 2026-04-02.",
-    "ground_truth_ids": [
-      "evt_007845",
-      "evt_013975",
-      "evt_016075"
-    ],
-    "flaw_type": "none",
-    "human_score": 5,
-    "category": "good"
-  },
-  {
-    "id": "q_00069",
-    "query_id": "q_00069",
-    "user_question": "what's happening in Seattle next month",
-    "query_filters": {
-      "city": "Seattle",
-      "category": "Nightlife",
-      "time_window_start": "2026-06-10T00:00:00",
-      "time_window_end": "2026-06-15T23:59:00",
-      "radius_km": 20,
-      "lat": 47.586092,
-      "lng": -122.327279
-    },
-    "agent_answer": "Here are events: Rooftop Party - Central Park at Central Park on 2026-06-12 and Rooftop Party - Central Park at Central Park on 2026-06-12. Both in Seattle.",
-    "ground_truth_ids": [
-      "evt_005442",
-      "evt_009099",
-      "evt_012229"
-    ],
-    "flaw_type": "spam",
-    "human_score": 2,
-    "category": "bad"
-  },
-  {
-    "id": "q_00075",
-    "query_id": "q_00075",
-    "user_question": "things to do next month in Boston",
-    "query_filters": {
-      "city": "Boston",
-      "category": "Arts",
-      "time_window_start": "2026-07-24T00:00:00",
-      "time_window_end": "2026-07-31T23:59:00",
-      "radius_km": 12,
-      "lat": 42.436363,
-      "lng": -71.043356
-    },
-    "agent_answer": "Here are events: Photography Expo: Central Park Showcase at Central Park on 2026-07-26 and Photography Expo: Central Park Showcase at Central Park on 2026-07-26. Both in Boston.",
-    "ground_truth_ids": [
-      "evt_004910",
-      "evt_010301",
-      "evt_010592",
-      "evt_011874",
-      "evt_016063"
-    ],
-    "flaw_type": "spam",
-    "human_score": 2,
-    "category": "bad"
-  },
-  {
-    "id": "q_00000",
-    "query_id": "q_00000",
-    "user_question": "showcase in Portland next week",
-    "query_filters": {
-      "city": "Portland",
-      "category": "Tech",
-      "time_window_start": "2026-04-05T00:00:00",
-      "time_window_end": "2026-04-07T23:59:00",
-      "radius_km": 20,
-      "lat": 45.516312,
-      "lng": -122.745791
-    },
-    "agent_answer": "Found Tech events: Cloud Native Demo Night in Berlin on 2026-04-07.",
-    "ground_truth_ids": [
-      "evt_001488"
-    ],
-    "flaw_type": "wrong_city",
-    "human_score": 2,
-    "category": "bad"
-  },
-  {
     "id": "q_00054",
     "query_id": "q_00054",
     "user_question": "Nightlife market tomorrow San Francisco",
@@ -179,25 +110,6 @@
       "lng": -122.472456
     },
     "agent_answer": "I couldn't find any Nightlife events in San Francisco for 2026-04-04 to 2026-04-04.",
-    "ground_truth_ids": [],
-    "flaw_type": "none",
-    "human_score": 5,
-    "category": "good"
-  },
-  {
-    "id": "q_00091",
-    "query_id": "q_00091",
-    "user_question": "what's happening in Denver next month",
-    "query_filters": {
-      "city": "Denver",
-      "category": "Nightlife",
-      "time_window_start": "2026-05-26T00:00:00",
-      "time_window_end": "2026-05-28T23:59:00",
-      "radius_km": 35,
-      "lat": 39.715046,
-      "lng": -104.9344
-    },
-    "agent_answer": "I couldn't find any Nightlife events in Denver for 2026-05-26 to 2026-05-28.",
     "ground_truth_ids": [],
     "flaw_type": "none",
     "human_score": 5,
@@ -229,28 +141,99 @@
     "category": "good"
   },
   {
-    "id": "q_00020",
-    "query_id": "q_00020",
-    "user_question": "weekend Arts in Miami",
+    "id": "q_00064",
+    "query_id": "q_00064",
+    "user_question": "weekend Nightlife in Los Angeles",
     "query_filters": {
-      "city": "Miami",
-      "category": "Arts",
-      "time_window_start": "2026-05-23T00:00:00",
+      "city": "Los Angeles",
+      "category": "Nightlife",
+      "time_window_start": "2026-05-25T00:00:00",
       "time_window_end": "2026-05-29T23:59:00",
-      "radius_km": 8,
-      "lat": 25.733304,
-      "lng": -80.234836
+      "radius_km": 30,
+      "lat": 34.078162,
+      "lng": -118.232471
     },
-    "agent_answer": "Here are events: Miami Film Screening Walk at Sunset Lounge on 2026-05-23 and Miami Film Screening Walk at Sunset Lounge on 2026-05-23. Both in Miami.",
+    "agent_answer": "Here are events: DJ Night at The Loft on 2026-05-26 and DJ Night at The Loft on 2026-05-26. Both in Los Angeles.",
     "ground_truth_ids": [
-      "evt_004505",
-      "evt_009442",
-      "evt_012570",
-      "evt_013255"
+      "evt_000390",
+      "evt_002622",
+      "evt_003148",
+      "evt_003318",
+      "evt_013526"
     ],
     "flaw_type": "spam",
     "human_score": 2,
     "category": "bad"
+  },
+  {
+    "id": "q_00083",
+    "query_id": "q_00083",
+    "user_question": "what's happening in Portland next month",
+    "query_filters": {
+      "city": "Portland",
+      "category": "Music",
+      "time_window_start": "2026-07-04T00:00:00",
+      "time_window_end": "2026-07-06T23:59:00",
+      "radius_km": 12,
+      "lat": 45.45786,
+      "lng": -122.689337
+    },
+    "agent_answer": "Found Music events: Acoustic Evening with The Midnight Signals in Berlin on 2026-07-04.",
+    "ground_truth_ids": [
+      "evt_010240",
+      "evt_016761"
+    ],
+    "flaw_type": "wrong_city",
+    "human_score": 2,
+    "category": "bad"
+  },
+  {
+    "id": "q_00035",
+    "query_id": "q_00035",
+    "user_question": "things to do next month in Philadelphia",
+    "query_filters": {
+      "city": "Philadelphia",
+      "category": "Nightlife",
+      "time_window_start": "2026-07-02T00:00:00",
+      "time_window_end": "2026-07-07T23:59:00",
+      "radius_km": 20,
+      "lat": 39.929132,
+      "lng": -75.159131
+    },
+    "agent_answer": "Here are some Nightlife events near Philadelphia: Philadelphia Nightlife Crawl @ City Hall at City Hall on 2026-07-03; Rooftop Party - Grand Theater at Grand Theater on 2026-07-02; DJ Night at Riverside Hall on 2026-07-05.",
+    "ground_truth_ids": [
+      "evt_004934",
+      "evt_005811",
+      "evt_007569",
+      "evt_009237",
+      "evt_019727"
+    ],
+    "flaw_type": "none",
+    "human_score": 5,
+    "category": "good"
+  },
+  {
+    "id": "q_00089",
+    "query_id": "q_00089",
+    "user_question": "festival in Atlanta next month",
+    "query_filters": {
+      "city": "Atlanta",
+      "category": "Arts",
+      "time_window_start": "2026-07-14T00:00:00",
+      "time_window_end": "2026-07-18T23:59:00",
+      "radius_km": 8,
+      "lat": 33.767943,
+      "lng": -84.405708
+    },
+    "agent_answer": "Here are some Arts events near Atlanta: Photography Expo: Community Center Showcase at Community Center on 2026-07-15; Atlanta Painting Walk at Market Square on 2026-07-18; Film Screening Night Market at Central Park on 2026-07-18.",
+    "ground_truth_ids": [
+      "evt_015872",
+      "evt_017050",
+      "evt_018687"
+    ],
+    "flaw_type": "none",
+    "human_score": 5,
+    "category": "good"
   },
   {
     "id": "q_00053",
@@ -278,73 +261,25 @@
     "category": "good"
   },
   {
-    "id": "q_00064",
-    "query_id": "q_00064",
-    "user_question": "weekend Nightlife in Los Angeles",
+    "id": "q_00000",
+    "query_id": "q_00000",
+    "user_question": "showcase in Portland next week",
     "query_filters": {
-      "city": "Los Angeles",
-      "category": "Nightlife",
-      "time_window_start": "2026-05-25T00:00:00",
-      "time_window_end": "2026-05-29T23:59:00",
-      "radius_km": 30,
-      "lat": 34.078162,
-      "lng": -118.232471
+      "city": "Portland",
+      "category": "Tech",
+      "time_window_start": "2026-04-05T00:00:00",
+      "time_window_end": "2026-04-07T23:59:00",
+      "radius_km": 20,
+      "lat": 45.516312,
+      "lng": -122.745791
     },
-    "agent_answer": "Here are events: DJ Night at The Loft on 2026-05-26 and DJ Night at The Loft on 2026-05-26. Both in Los Angeles.",
+    "agent_answer": "Found Tech events: Cloud Native Demo Night in Berlin on 2026-04-07.",
     "ground_truth_ids": [
-      "evt_000390",
-      "evt_002622",
-      "evt_003148",
-      "evt_003318",
-      "evt_013526"
+      "evt_001488"
     ],
-    "flaw_type": "spam",
-    "human_score": 2,
-    "category": "bad"
-  },
-  {
-    "id": "q_00028",
-    "query_id": "q_00028",
-    "user_question": "best Business events near Philadelphia next month",
-    "query_filters": {
-      "city": "Philadelphia",
-      "category": "Business",
-      "time_window_start": "2026-08-24T00:00:00",
-      "time_window_end": "2026-08-28T23:59:00",
-      "radius_km": 25,
-      "lat": 39.967591,
-      "lng": -75.125438
-    },
-    "agent_answer": "Great Business events in Los Angeles: Music Festival at Central Park.",
-    "ground_truth_ids": [],
     "flaw_type": "wrong_city",
     "human_score": 2,
     "category": "bad"
-  },
-  {
-    "id": "q_00077",
-    "query_id": "q_00077",
-    "user_question": "what's happening in New York next month",
-    "query_filters": {
-      "city": "New York",
-      "category": "Arts",
-      "time_window_start": "2026-05-18T00:00:00",
-      "time_window_end": "2026-05-23T23:59:00",
-      "radius_km": 35,
-      "lat": 40.767994,
-      "lng": -74.077773
-    },
-    "agent_answer": "Here are some Arts events near New York: Film Screening Workshop: Civic Auditorium Showcase at Civic Auditorium on 2026-05-23; Film Screening Meetup: City Hall Showcase at City Hall on 2026-05-22; Painting Night Market at City Hall on 2026-05-20.",
-    "ground_truth_ids": [
-      "evt_005582",
-      "evt_008796",
-      "evt_011911",
-      "evt_011951",
-      "evt_019271"
-    ],
-    "flaw_type": "none",
-    "human_score": 5,
-    "category": "good"
   },
   {
     "id": "q_00097",
@@ -372,51 +307,6 @@
     "category": "good"
   },
   {
-    "id": "q_00083",
-    "query_id": "q_00083",
-    "user_question": "what's happening in Portland next month",
-    "query_filters": {
-      "city": "Portland",
-      "category": "Music",
-      "time_window_start": "2026-07-04T00:00:00",
-      "time_window_end": "2026-07-06T23:59:00",
-      "radius_km": 12,
-      "lat": 45.45786,
-      "lng": -122.689337
-    },
-    "agent_answer": "Found Music events: Acoustic Evening with The Midnight Signals in Berlin on 2026-07-04.",
-    "ground_truth_ids": [
-      "evt_010240",
-      "evt_016761"
-    ],
-    "flaw_type": "wrong_city",
-    "human_score": 2,
-    "category": "bad"
-  },
-  {
-    "id": "q_00089",
-    "query_id": "q_00089",
-    "user_question": "festival in Atlanta next month",
-    "query_filters": {
-      "city": "Atlanta",
-      "category": "Arts",
-      "time_window_start": "2026-07-14T00:00:00",
-      "time_window_end": "2026-07-18T23:59:00",
-      "radius_km": 8,
-      "lat": 33.767943,
-      "lng": -84.405708
-    },
-    "agent_answer": "Here are some Arts events near Atlanta: Photography Expo: Community Center Showcase at Community Center on 2026-07-15; Atlanta Painting Walk at Market Square on 2026-07-18; Film Screening Night Market at Central Park on 2026-07-18.",
-    "ground_truth_ids": [
-      "evt_015872",
-      "evt_017050",
-      "evt_018687"
-    ],
-    "flaw_type": "none",
-    "human_score": 5,
-    "category": "good"
-  },
-  {
     "id": "q_00029",
     "query_id": "q_00029",
     "user_question": "best Nightlife events near Chicago this weekend",
@@ -434,6 +324,128 @@
     "flaw_type": "none",
     "human_score": 5,
     "category": "good"
+  },
+  {
+    "id": "q_00075",
+    "query_id": "q_00075",
+    "user_question": "things to do next month in Boston",
+    "query_filters": {
+      "city": "Boston",
+      "category": "Arts",
+      "time_window_start": "2026-07-24T00:00:00",
+      "time_window_end": "2026-07-31T23:59:00",
+      "radius_km": 12,
+      "lat": 42.436363,
+      "lng": -71.043356
+    },
+    "agent_answer": "Here are events: Photography Expo: Central Park Showcase at Central Park on 2026-07-26 and Photography Expo: Central Park Showcase at Central Park on 2026-07-26. Both in Boston.",
+    "ground_truth_ids": [
+      "evt_004910",
+      "evt_010301",
+      "evt_010592",
+      "evt_011874",
+      "evt_016063"
+    ],
+    "flaw_type": "spam",
+    "human_score": 2,
+    "category": "bad"
+  },
+  {
+    "id": "q_00002",
+    "query_id": "q_00002",
+    "user_question": "festival in Atlanta next month",
+    "query_filters": {
+      "city": "Atlanta",
+      "category": "Arts",
+      "time_window_start": "2026-07-14T00:00:00",
+      "time_window_end": "2026-07-18T23:59:00",
+      "radius_km": 8,
+      "lat": 33.767943,
+      "lng": -84.405708
+    },
+    "agent_answer": "Here are some Arts events near Atlanta: Photography Expo: Community Center Showcase at Community Center on 2027-07-18; Atlanta Painting Walk at Market Square on 2027-07-18; Film Screening Night Market at Central Park on 2027-07-18.",
+    "ground_truth_ids": [
+      "evt_015872",
+      "evt_017050",
+      "evt_018687"
+    ],
+    "flaw_type": "wrong_time",
+    "human_score": 2,
+    "category": "bad"
+  },
+  {
+    "id": "q_00005",
+    "query_id": "q_00005",
+    "user_question": "Music workshop next month Chicago",
+    "query_filters": {
+      "city": "Chicago",
+      "category": "Music",
+      "time_window_start": "2026-06-30T00:00:00",
+      "time_window_end": "2026-07-03T23:59:00",
+      "radius_km": 15,
+      "lat": 41.915325,
+      "lng": -87.614914
+    },
+    "agent_answer": "Here are some Music events near Chicago: Neon Harbor Concert - Chicago Nights at Riverside Hall on 2026-07-02; Juniper Day at Grand Theater at Harbor View on 2026-07-03; Ava Rhodes Concert - Chicago Nights at City Hall on 2026-07-02.",
+    "ground_truth_ids": [
+      "evt_000435",
+      "evt_008043",
+      "evt_015265",
+      "evt_018493",
+      "evt_019698"
+    ],
+    "flaw_type": "hallucination",
+    "human_score": 2,
+    "category": "bad"
+  },
+  {
+    "id": "q_00025",
+    "query_id": "q_00025",
+    "user_question": "things to do next month in Seattle",
+    "query_filters": {
+      "city": "Seattle",
+      "category": "Nightlife",
+      "time_window_start": "2026-04-23T00:00:00",
+      "time_window_end": "2026-04-28T23:59:00",
+      "radius_km": 25,
+      "lat": 47.612224,
+      "lng": -122.347064
+    },
+    "agent_answer": "Here are events: Rooftop Party - Warehouse 22 at Warehouse 22 on 2026-04-28 and Rooftop Party - Warehouse 22 at Warehouse 22 on 2026-04-28. Both in Seattle.",
+    "ground_truth_ids": [
+      "evt_001702",
+      "evt_004480",
+      "evt_010327",
+      "evt_011976"
+    ],
+    "flaw_type": "spam",
+    "human_score": 2,
+    "category": "bad"
+  },
+  {
+    "id": "q_00001",
+    "query_id": "q_00001",
+    "user_question": "things to do next month in Miami",
+    "query_filters": {
+      "city": "Miami",
+      "category": "Music",
+      "time_window_start": "2026-05-07T00:00:00",
+      "time_window_end": "2026-05-13T23:59:00",
+      "radius_km": 25,
+      "lat": 25.742967,
+      "lng": -80.245008
+    },
+    "agent_answer": "Here are some Music events near Miami: Acoustic Evening with Blue Violet at Central Park on 2027-05-13; Ava Rhodes Concert - Miami Nights at Central Park on 2027-05-13; Acoustic Evening with Neon Harbor at Civic Auditorium on 2027-05-13.",
+    "ground_truth_ids": [
+      "evt_002104",
+      "evt_003700",
+      "evt_003782",
+      "evt_004290",
+      "evt_006759"
+    ],
+    "flaw_type": "wrong_time",
+    "human_score": 2,
+    "category": "bad"
   },
   {
     "id": "q_00003",
@@ -458,5 +470,91 @@
     "flaw_type": "wrong_city",
     "human_score": 2,
     "category": "bad"
+  },
+  {
+    "id": "q_00071",
+    "query_id": "q_00071",
+    "user_question": "what's happening in Philadelphia next week",
+    "query_filters": {
+      "city": "Philadelphia",
+      "category": "Community",
+      "time_window_start": "2026-03-28T00:00:00",
+      "time_window_end": "2026-04-02T23:59:00",
+      "radius_km": 30,
+      "lat": 40.00941,
+      "lng": -75.141918
+    },
+    "agent_answer": "Here are some Community events near Philadelphia: Neighborhood Potluck - Grand Theater at Grand Theater on 2026-04-02.",
+    "ground_truth_ids": [
+      "evt_007845",
+      "evt_013975",
+      "evt_016075"
+    ],
+    "flaw_type": "none",
+    "human_score": 5,
+    "category": "good"
+  },
+  {
+    "id": "q_00028",
+    "query_id": "q_00028",
+    "user_question": "best Business events near Philadelphia next month",
+    "query_filters": {
+      "city": "Philadelphia",
+      "category": "Business",
+      "time_window_start": "2026-08-24T00:00:00",
+      "time_window_end": "2026-08-28T23:59:00",
+      "radius_km": 25,
+      "lat": 39.967591,
+      "lng": -75.125438
+    },
+    "agent_answer": "Great Business events in Los Angeles: Music Festival at Central Park.",
+    "ground_truth_ids": [],
+    "flaw_type": "wrong_city",
+    "human_score": 2,
+    "category": "bad"
+  },
+  {
+    "id": "q_00091",
+    "query_id": "q_00091",
+    "user_question": "what's happening in Denver next month",
+    "query_filters": {
+      "city": "Denver",
+      "category": "Nightlife",
+      "time_window_start": "2026-05-26T00:00:00",
+      "time_window_end": "2026-05-28T23:59:00",
+      "radius_km": 35,
+      "lat": 39.715046,
+      "lng": -104.9344
+    },
+    "agent_answer": "I couldn't find any Nightlife events in Denver for 2026-05-26 to 2026-05-28.",
+    "ground_truth_ids": [],
+    "flaw_type": "none",
+    "human_score": 5,
+    "category": "good"
+  },
+  {
+    "id": "q_00077",
+    "query_id": "q_00077",
+    "user_question": "what's happening in New York next month",
+    "query_filters": {
+      "city": "New York",
+      "category": "Arts",
+      "time_window_start": "2026-05-18T00:00:00",
+      "time_window_end": "2026-05-23T23:59:00",
+      "radius_km": 35,
+      "lat": 40.767994,
+      "lng": -74.077773
+    },
+    "agent_answer": "Here are some Arts events near New York: Film Screening Workshop: Civic Auditorium Showcase at Civic Auditorium on 2026-05-23; Film Screening Meetup: City Hall Showcase at City Hall on 2026-05-22; Painting Night Market at City Hall on 2026-05-20.",
+    "ground_truth_ids": [
+      "evt_005582",
+      "evt_008796",
+      "evt_011911",
+      "evt_011951",
+      "evt_019271"
+    ],
+    "flaw_type": "none",
+    "human_score": 5,
+    "category": "good"
   }
 ]
