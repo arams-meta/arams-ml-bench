@@ -29,6 +29,6 @@ Constraints:
 - Use seed 42, determinism where possible
 - Temperature 0 for LLM calls to keep deterministic
 
-Expected output: /output/judgments.csv with 20 judgments where good answers > bad answers by >=1 margin for final_score, correlation of final_score vs hidden human_score >=0.6, and sub-judges: hallucination answers accuracy_score <=2, spam answers spam_score <=2, wrong_time/wrong_city filter_score <=3. Good answers should have all sub-scores >=4 and final_score 5.
+Expected output: /output/judgments.csv with 24 judgments where good answers > bad answers by >=1 margin for final_score, correlation of final_score vs hidden human_score >=0.6, and sub-judges: hallucination answers accuracy_score <=2, spam answers spam_score <=2, wrong_time/wrong_city filter_score <=3. Good answers should have all sub-scores >=4 and final_score 5.
 
 Your multi-judge panel will be tested on visible set + hidden holdout set to ensure product-specific accuracy and generalization (holdout not visible to agent).
