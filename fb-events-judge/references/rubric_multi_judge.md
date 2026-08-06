@@ -4,7 +4,7 @@ You are building a panel of 4 LLM-as-Judge evaluators for FB Events agent answer
 
 ## Inventory
 - /app/data/events.jsonl: id, title, description, city, venue, category, start_time, is_spam, cluster_id
-- /app/data/judge_dataset.json: 20 items with user_question, query_filters, agent_answer, ground_truth_ids
+- /app/data/judge_dataset.json: 24 items with user_question, query_filters, agent_answer, ground_truth_ids
 
 ## Judge 1: Accuracy / Hallucination Judge (accuracy_judge.py)
 Checks if agent_answer mentions only real events from inventory.

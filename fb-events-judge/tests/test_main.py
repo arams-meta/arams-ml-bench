@@ -153,7 +153,7 @@ def test_no_hardcoded_scores():
     score_col = get_score_col(judg)
     uniq = judg[score_col].nunique()
     assert uniq >= 2, f"All same score {uniq} - hardcoded"
-    # Strengthened: need variance >0.5 to defeat 2-constant bypass (oracle has 3 uniques 5,2,1 with std ~1.4)
+    # Strengthened: need standard deviation >0.5 to defeat 2-constant bypass
     assert float(judg[score_col].std()) > 0.5, (
         f"Std too low {float(judg[score_col].std()):.2f} - likely hardcoded"
     )

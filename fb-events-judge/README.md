@@ -11,22 +11,29 @@ city/category/time, spam and duplicate clusters, unhelpfulness.
 - `data/events.jsonl` — 649 synthetic inventory rows. Fields: `id`, `title`,
   `description`, `category`, `city`, `venue`, `lat`, `lng`, `start_time`, `end_time`,
   `popularity`, `is_spam`, `cluster_id`.
-- `data/judge_dataset.json` — 20 visible query/answer pairs, no labels.
-- `tests/data/judge_dataset_with_scores.json` — the same 20 with hidden
+- `data/judge_dataset.json` — 24 visible query/answer pairs, no labels.
+- `tests/data/judge_dataset_with_scores.json` — the same 24 with hidden
   `category`, `flaw_type`, `human_score`. Verifier only.
-- `tests/data/holdout.json` — 20 unseen, same label schema.
+- `tests/data/holdout.json` — 24 unseen, same label schema.
 
-Flaw distribution, identical in both the visible set and the holdout:
+Flaw distribution, identical in both the graded set and the holdout:
 
 | flaw_type | count | human_score |
 |---|---|---|
 | none (good) | 10 | 5 |
 | spam | 5 | 2 |
 | wrong_city | 5 | 2 |
+| wrong_time | 2 | 2 |
+| hallucination | 2 | 2 |
 
-`human_score` is binary (5 or 2). There are **no** `hallucination` and **no**
-`wrong_time` items in either set, though `instruction.md` and `reference_toy.json`
-both describe them — see Known Limitations.
+Every flaw type named in the spec and in `reference_toy.json` is present in both
+the graded set and the holdout, so each per-flaw gate asserts against real data.
+`human_score` is binary (5 or 2).
+
+The three `reference_toy.json` anchors use a `toy_*` id space and the graded and
+holdout items use `q_*`; the two are disjoint, so none of the three visible
+`human_score` anchors corresponds to a graded item and no graded label is
+reachable from them.
 
 Dataset synthetic, human-authored + Llama-generated with human review (no 3P tokens),
 baked into Docker per provenance rules.
@@ -111,7 +118,7 @@ Current scope caveats.
    answer format changes. The LLM path is the intended primary route.
 
 ## Files
-- `data/judge_dataset.json` — 20 visible query/answer pairs
+- `data/judge_dataset.json` — 24 visible query/answer pairs
 - `data/events.jsonl` — 649-row inventory
 - `data/reference_toy.json` — 3 hand-crafted anchors
 - `references/rubric.md`, `references/rubric_multi_judge.md` — single and 4-judge rubrics
