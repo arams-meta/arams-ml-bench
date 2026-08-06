@@ -2,7 +2,12 @@
 # V3: Reverted to passing da8c892d simple style + CPU torch pin + pre-baked
 FROM public.ecr.aws/docker/library/python:3.10.12-slim-bullseye
 
-RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch==2.1.2 && \
+# torchvision MUST be installed here, from the CPU index, alongside torch.
+# sentence-transformers==2.2.2 requires torchvision; if it is missing, the
+# second pip install resolves it from PyPI, which upgrades torch to a CUDA
+# build and drags in ~3.4GB of nvidia-*/triton wheels on a gpus=0 task.
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu \
+    torch==2.1.2 torchvision==0.16.2 && \
     pip install --no-cache-dir \
     sentence-transformers==2.2.2 \
     transformers==4.35.2 \

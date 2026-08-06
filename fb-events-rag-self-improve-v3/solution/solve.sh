@@ -484,25 +484,34 @@ PY
 
 # Enforce non-root isolation defense-in-depth: if running as root, drop to agentuser so /opt/eval 700 remains unreadable
 # No sudo granted to agentuser, so cannot bypass - fixes High sudoers issue and Medium Env isolation depends on USER
+#
+# Drop privileges only around the python run, NOT by re-exec'ing "bash $0".
+# Re-exec re-ran this whole script as agentuser, which then tried to rewrite the
+# /app/oracle_impl.py heredoc it had just written as root (0644 root:root) and
+# died with "Permission denied" before producing any /output.
 if [ "$(id -u)" = "0" ]; then
-  if id agentuser &>/dev/null; then
-    echo "Running as root, dropping to agentuser for isolation (defense-in-depth)..."
-    exec su agentuser -s /bin/bash -c "bash $0 $*"
-  else
+  if ! id agentuser &>/dev/null; then
     echo "ERROR: running as root without agentuser - isolation requires non-root" >&2
     exit 1
   fi
+  echo "Running as root, dropping to agentuser for isolation (defense-in-depth)..."
+  chmod a+r /app/oracle_impl.py
+  chown -R agentuser:agentuser /output 2>/dev/null || true
+  AS_USER=(su agentuser -s /bin/bash -c)
+else
+  AS_USER=(bash -c)
 fi
 
-# Now running as agentuser - verify hidden not readable (defense-in-depth)
+# Verify hidden not readable as the unprivileged user (defense-in-depth), then run
+"${AS_USER[@]}" '
+set -e
 if [ -r /opt/eval/queries.jsonl ]; then
   echo "ERROR: hidden /opt/eval/queries.jsonl readable at solve time - isolation broken!" >&2
   ls -ld /opt/eval/ 2>&1
   exit 1
 fi
+python3 /app/oracle_impl.py'
 
-# Run oracle as current user (already agentuser, no fallback to root that undermines isolation)
-python3 /app/oracle_impl.py
 ls -lh /output/
 echo "Checking isolation: agentuser reading /opt/eval should fail..."
 ls /opt/eval/ 2>&1 | head || echo "agentuser cannot read /opt/eval - good isolation (700 perms, USER agentuser enforced, no sudo)"
